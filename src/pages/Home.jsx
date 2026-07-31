@@ -19,8 +19,9 @@ const GAMES = [
   {
     id: "open-the-boxes",
     name: "Open the Boxes",
-    description: "Coming soon.",
-    enabled: false,
+    description: "Click a box to reveal a discussion question.",
+    path: "/open-the-boxes",
+    enabled: true,
   },
   {
     id: "fill-in-the-blanks",

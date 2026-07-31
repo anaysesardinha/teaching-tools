@@ -189,7 +189,7 @@ export default function UnscrambleSentences() {
 
             {sets.length === 0 ? (
               <div className="uw-card uw-empty" style={{ marginBottom: 20 }}>
-                No sets yet. Create the first one with your class sentences.
+                No sets yet.
               </div>
             ) : (
               <div style={{ marginBottom: 20 }}>

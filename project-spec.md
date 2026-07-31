@@ -7,9 +7,9 @@ A small collection of interactive games for a teacher to run during class. Built
 **Usage context:** classes are online. The teacher runs the game on their own device and shares the screen; students watch and answer verbally or in chat. There is no student-facing device or login, so no multiplayer sync, scoring server, or accounts are needed.
 
 **Games planned:**
-1. Unscramble Sentences — spec finalized, prototype built (this is the starting point)
+1. Unscramble Sentences — spec finalized, built
 2. Spin the Wheel — not yet specified
-3. Open the Boxes — not yet specified
+3. Open the Boxes — spec finalized, built
 4. Fill in the Blanks — not yet specified
 
 All UI text, labels, and copy must be in English.
@@ -65,9 +65,26 @@ Derived from the prototype, meant to be shared across all four games for visual 
 
 **Prototype:** `unscramble_sentences.jsx` (attached separately). Fully working except persistence, which needs to be swapped from `window.storage` to a real solution as described above.
 
-## Games 2–4: not yet defined
+## Game 3: Open the Boxes (finalized spec)
 
-Placeholder for future spec sessions. Suggested next step: define one game at a time the same way Unscramble Sentences was defined (usage context confirmed, one MVP decision at a time, prototype before building for real).
+**Content setup**
+- Teacher creates a named set of open-ended conversation questions (no multiple choice — students answer verbally)
+- Questions typed directly into a textarea, one per line
+- Or imported from a `.txt` file (one question per line), appended into the same textarea
+- Live count of detected questions while typing
+- Sets are saved and reusable across different classes/sessions
+
+**Gameplay**
+- The game screen shows a grid of numbered boxes, one per question, numbered 1..N in the exact order the questions were typed (fixed, not shuffled)
+- Clicking a box reveals that question, shown large enough to read during a video-call screen share
+- A "Done" button on the revealed question returns to the box grid
+- Once a box has been opened, it stays visually marked (muted, with a checkmark) but remains clickable, so the teacher can reread a question anytime
+- A "Reset boxes" button clears every box back to unopened, without needing to recreate the set
+- No scoring, no timer
+
+## Games 2 and 4: not yet defined
+
+Placeholder for future spec sessions. Suggested next step: define one game at a time the same way Unscramble Sentences and Open the Boxes were defined (usage context confirmed, one MVP decision at a time, prototype before building for real).
 
 ## Open questions for later
 
