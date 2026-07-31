@@ -13,8 +13,9 @@ const GAMES = [
   {
     id: "spin-the-wheel",
     name: "Spin the Wheel",
-    description: "Coming soon.",
-    enabled: false,
+    description: "Spin the wheel to randomly pick an item.",
+    path: "/spin-the-wheel",
+    enabled: true,
   },
   {
     id: "open-the-boxes",

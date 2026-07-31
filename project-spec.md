@@ -8,7 +8,7 @@ A small collection of interactive games for a teacher to run during class. Built
 
 **Games planned:**
 1. Unscramble Sentences — spec finalized, built
-2. Spin the Wheel — not yet specified
+2. Spin the Wheel — spec finalized, built
 3. Open the Boxes — spec finalized, built
 4. Fill in the Blanks — not yet specified
 
@@ -65,6 +65,21 @@ Derived from the prototype, meant to be shared across all four games for visual 
 
 **Prototype:** `unscramble_sentences.jsx` (attached separately). Fully working except persistence, which needs to be swapped from `window.storage` to a real solution as described above.
 
+## Game 2: Spin the Wheel (finalized spec)
+
+**Content setup**
+- Teacher creates a named set of items — could be student names, topics, questions, anything to randomly pick from
+- Items typed directly into a textarea, one per line
+- Or imported from a `.txt` file (one item per line), appended into the same textarea
+- Live count of detected items while typing
+- Sets are saved and reusable across different classes/sessions
+
+**Gameplay**
+- The wheel is divided into one slice per item, spun with a "Spin" button
+- The wheel spins and decelerates to land on one random item, which is highlighted on the wheel and shown as large text below it
+- Once an item has been drawn, it's excluded from future spins (visually dimmed on the wheel) until the teacher clicks "Reset wheel" — no repeats within a round, but the teacher can reset anytime without recreating the set
+- No scoring, no timer
+
 ## Game 3: Open the Boxes (finalized spec)
 
 **Content setup**
@@ -82,9 +97,9 @@ Derived from the prototype, meant to be shared across all four games for visual 
 - A "Reset boxes" button clears every box back to unopened, without needing to recreate the set
 - No scoring, no timer
 
-## Games 2 and 4: not yet defined
+## Game 4: not yet defined
 
-Placeholder for future spec sessions. Suggested next step: define one game at a time the same way Unscramble Sentences and Open the Boxes were defined (usage context confirmed, one MVP decision at a time, prototype before building for real).
+Placeholder for a future spec session. Suggested next step: define it the same way the other three games were defined (usage context confirmed, one MVP decision at a time, prototype before building for real).
 
 ## Open questions for later
 
