@@ -1,0 +1,19 @@
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: transparent;
+  color: var(--ink);
+  transition: color 0.2s ease;
+}

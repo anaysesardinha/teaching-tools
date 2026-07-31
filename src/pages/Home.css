@@ -1,0 +1,68 @@
+.home-root {
+  min-height: 100%;
+  padding: 32px 20px;
+}
+
+.home-shell {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.home-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.home-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 24px 0;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.home-card {
+  display: block;
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--surface-glass-border);
+  border-radius: 16px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--glass-shadow);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-card:not(.home-card-disabled):hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow), var(--accent-glow);
+}
+
+.home-card-disabled {
+  opacity: 0.5;
+  cursor: default;
+  filter: saturate(0.6);
+}
+
+.home-card-name {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.home-card-desc {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
