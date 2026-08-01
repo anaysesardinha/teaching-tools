@@ -193,6 +193,11 @@
 }
 .wb-swatch:hover:not(:disabled) { transform: scale(1.1); }
 .wb-swatch:disabled { opacity: 0.35; cursor: not-allowed; }
+.wb-swatch-none {
+  background:
+    linear-gradient(45deg, transparent 45%, var(--error) 45%, var(--error) 55%, transparent 55%),
+    var(--surface);
+}
 
 .wb-flash-floating {
   position: absolute;
@@ -224,7 +229,7 @@
   background-image:
     radial-gradient(circle, var(--border) 1px, transparent 1px);
   background-size: 28px 28px;
-  background-color: var(--surface);
+  background-color: color-mix(in srgb, var(--surface) 55%, var(--bg) 45%);
   border: 1px solid var(--border);
 }
 
@@ -245,6 +250,34 @@
 }
 .wb-textbox-selected {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), 0 0 0 2px var(--accent);
+}
+/* free-floating plain text: no note-card chrome at all, header/handle only
+   surface on hover or while selected so it doesn't look like a sticky note */
+.wb-textbox-plain {
+  border: none;
+  box-shadow: none;
+}
+.wb-textbox-plain.wb-textbox-selected {
+  box-shadow: 0 0 0 2px var(--accent);
+  border-radius: 6px;
+}
+.wb-textbox-header-plain {
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.wb-textbox-plain:hover .wb-textbox-header-plain,
+.wb-textbox-plain.wb-textbox-selected .wb-textbox-header-plain {
+  opacity: 1;
+  background: var(--surface-glass-strong);
+}
+.wb-textbox-resize-handle-plain {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.wb-textbox-plain:hover .wb-textbox-resize-handle-plain,
+.wb-textbox-plain.wb-textbox-selected .wb-textbox-resize-handle-plain {
+  opacity: 1;
 }
 .wb-textbox-header {
   display: flex;

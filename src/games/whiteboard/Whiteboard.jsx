@@ -17,11 +17,27 @@ const MIN_BOX_HEIGHT = 60;
 const TEXTBOX_HEADER_HEIGHT = 18;
 const CLICK_MOVE_THRESHOLD = 5;
 const SAVE_DEBOUNCE_MS = 600;
-const SWATCHES = ["#FEF08A", "#BBF7D0", "#BFDBFE", "#FBCFE8", "#FED7AA", "#E5E7EB"];
+const TRANSPARENT_COLOR = "transparent";
+// muted/dusty tones rather than bright pastels, plus a "no fill" option for
+// free-floating text with no note-card chrome at all
+const SWATCHES = [
+  TRANSPARENT_COLOR,
+  "#F0E6C8",
+  "#D9E5D3",
+  "#D6E3EC",
+  "#E8D8DE",
+  "#E9DAC9",
+  "#DEE0E4",
+];
 const DEFAULT_FONT_SIZE = 15;
 const MIN_FONT_SIZE = 11;
 const MAX_FONT_SIZE = 40;
 const FONT_SIZE_STEP = 2;
+const FONT_SIZE_PRESETS = [
+  { label: "Text", value: 15 },
+  { label: "Subtitle", value: 20 },
+  { label: "Title", value: 28 },
+];
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -37,6 +53,8 @@ function WhiteboardTextBox({
   onDelete,
   justCreated,
 }) {
+  const isPlain = box.color === TRANSPARENT_COLOR;
+
   function handleChange(e) {
     const value = e.target.value;
     // grow the box to fit content that no longer fits — never shrinks on
@@ -47,7 +65,11 @@ function WhiteboardTextBox({
 
   return (
     <div
-      className={"wb-textbox" + (isSelected ? " wb-textbox-selected" : "")}
+      className={
+        "wb-textbox" +
+        (isPlain ? " wb-textbox-plain" : "") +
+        (isSelected ? " wb-textbox-selected" : "")
+      }
       style={{
         left: box.x,
         top: box.y,
@@ -58,7 +80,10 @@ function WhiteboardTextBox({
       }}
       onPointerDown={() => onSelect(box.id)}
     >
-      <div className="wb-textbox-header" onPointerDown={(e) => onHeaderPointerDown(e, box)}>
+      <div
+        className={"wb-textbox-header" + (isPlain ? " wb-textbox-header-plain" : "")}
+        onPointerDown={(e) => onHeaderPointerDown(e, box)}
+      >
         <span className="wb-textbox-handle" aria-hidden="true">⠿⠿</span>
         <button
           className="wb-textbox-delete"
@@ -80,10 +105,13 @@ function WhiteboardTextBox({
         style={{
           fontSize: box.fontSize || DEFAULT_FONT_SIZE,
           fontWeight: box.bold ? 800 : 500,
+          // pastel note backgrounds are always light, so fixed dark ink works;
+          // plain/no-fill text sits on the theme's own background instead
+          color: isPlain ? "var(--ink)" : undefined,
         }}
       />
       <div
-        className="wb-textbox-resize-handle"
+        className={"wb-textbox-resize-handle" + (isPlain ? " wb-textbox-resize-handle-plain" : "")}
         onPointerDown={(e) => onResizeHandlePointerDown(e, box)}
         aria-hidden="true"
       />
@@ -286,7 +314,7 @@ export default function Whiteboard() {
       width: DEFAULT_BOX_WIDTH,
       height: DEFAULT_BOX_HEIGHT,
       text: "",
-      color: SWATCHES[0],
+      color: SWATCHES[1],
       fontSize: DEFAULT_FONT_SIZE,
       bold: false,
       zIndex: nextZIndexRef.current,
@@ -331,6 +359,11 @@ export default function Whiteboard() {
     const current = textBoxes.find((b) => b.id === selectedBoxId);
     const base = current && current.fontSize ? current.fontSize : DEFAULT_FONT_SIZE;
     updateBox(selectedBoxId, { fontSize: clamp(base + delta, MIN_FONT_SIZE, MAX_FONT_SIZE) });
+  }
+
+  function setSelectedBoxFontSizePreset(value) {
+    if (!selectedBoxId) return;
+    updateBox(selectedBoxId, { fontSize: value });
   }
 
   function toggleSelectedBoxBold() {
@@ -602,6 +635,21 @@ export default function Whiteboard() {
               </button>
 
               <div className="wb-zoom-group">
+                {FONT_SIZE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    className={
+                      "wb-btn wb-btn-sm" +
+                      (selectedBox && (selectedBox.fontSize || DEFAULT_FONT_SIZE) === preset.value
+                        ? " wb-btn-primary"
+                        : " wb-btn-ghost")
+                    }
+                    disabled={!selectedBoxId}
+                    onClick={() => setSelectedBoxFontSizePreset(preset.value)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
                 <button
                   className="wb-btn wb-btn-ghost wb-btn-sm"
                   disabled={!selectedBoxId}
@@ -631,11 +679,11 @@ export default function Whiteboard() {
                 {SWATCHES.map((color) => (
                   <button
                     key={color}
-                    className="wb-swatch"
-                    style={{ background: color }}
+                    className={"wb-swatch" + (color === TRANSPARENT_COLOR ? " wb-swatch-none" : "")}
+                    style={color === TRANSPARENT_COLOR ? undefined : { background: color }}
                     disabled={!selectedBoxId}
                     onClick={() => setSelectedBoxColor(color)}
-                    aria-label={`Set color ${color}`}
+                    aria-label={color === TRANSPARENT_COLOR ? "No fill (plain text)" : `Set color ${color}`}
                   />
                 ))}
               </div>
