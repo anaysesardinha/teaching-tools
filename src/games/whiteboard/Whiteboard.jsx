@@ -15,8 +15,13 @@ const DEFAULT_BOX_HEIGHT = 120;
 const MIN_BOX_WIDTH = 140;
 const MIN_BOX_HEIGHT = 60;
 const TEXTBOX_HEADER_HEIGHT = 18;
+const CLICK_MOVE_THRESHOLD = 5;
 const SAVE_DEBOUNCE_MS = 600;
 const SWATCHES = ["#FEF08A", "#BBF7D0", "#BFDBFE", "#FBCFE8", "#FED7AA", "#E5E7EB"];
+const DEFAULT_FONT_SIZE = 15;
+const MIN_FONT_SIZE = 11;
+const MAX_FONT_SIZE = 40;
+const FONT_SIZE_STEP = 2;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -72,6 +77,10 @@ function WhiteboardTextBox({
         onChange={handleChange}
         placeholder="Type here..."
         autoFocus={justCreated}
+        style={{
+          fontSize: box.fontSize || DEFAULT_FONT_SIZE,
+          fontWeight: box.bold ? 800 : 500,
+        }}
       />
       <div
         className="wb-textbox-resize-handle"
@@ -253,6 +262,7 @@ export default function Whiteboard() {
   }
 
   const activeStudent = students.find((s) => s.id === activeStudentId);
+  const selectedBox = textBoxes.find((b) => b.id === selectedBoxId);
 
   function getViewportRect() {
     return viewportRef.current.getBoundingClientRect();
@@ -277,6 +287,8 @@ export default function Whiteboard() {
       height: DEFAULT_BOX_HEIGHT,
       text: "",
       color: SWATCHES[0],
+      fontSize: DEFAULT_FONT_SIZE,
+      bold: false,
       zIndex: nextZIndexRef.current,
     };
     justCreatedIdRef.current = id;
@@ -314,6 +326,19 @@ export default function Whiteboard() {
     updateBox(selectedBoxId, { color });
   }
 
+  function changeSelectedBoxFontSize(delta) {
+    if (!selectedBoxId) return;
+    const current = textBoxes.find((b) => b.id === selectedBoxId);
+    const base = current && current.fontSize ? current.fontSize : DEFAULT_FONT_SIZE;
+    updateBox(selectedBoxId, { fontSize: clamp(base + delta, MIN_FONT_SIZE, MAX_FONT_SIZE) });
+  }
+
+  function toggleSelectedBoxBold() {
+    if (!selectedBoxId) return;
+    const current = textBoxes.find((b) => b.id === selectedBoxId);
+    updateBox(selectedBoxId, { bold: !(current && current.bold) });
+  }
+
   function handleViewportPointerDown(e) {
     if (e.target.closest(".wb-textbox")) return;
     setSelectedBoxId(null);
@@ -339,12 +364,12 @@ export default function Whiteboard() {
     const drag = panDragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
     panDragRef.current = null;
-  }
-
-  function handleViewportDoubleClick(e) {
-    if (e.target.closest(".wb-textbox")) return;
-    const world = screenToWorld(e.clientX, e.clientY);
-    addTextBoxAt(world.x - DEFAULT_BOX_WIDTH / 2, world.y - DEFAULT_BOX_HEIGHT / 2);
+    const moved = Math.hypot(e.clientX - drag.startClientX, e.clientY - drag.startClientY);
+    // a click (barely any movement) adds a text box; a real drag just pans
+    if (moved < CLICK_MOVE_THRESHOLD) {
+      const world = screenToWorld(e.clientX, e.clientY);
+      addTextBoxAt(world.x - DEFAULT_BOX_WIDTH / 2, world.y - DEFAULT_BOX_HEIGHT / 2);
+    }
   }
 
   function handleBoxHeaderPointerDown(e, box) {
@@ -576,6 +601,32 @@ export default function Whiteboard() {
                 + Text
               </button>
 
+              <div className="wb-zoom-group">
+                <button
+                  className="wb-btn wb-btn-ghost wb-btn-sm"
+                  disabled={!selectedBoxId}
+                  onClick={() => changeSelectedBoxFontSize(-FONT_SIZE_STEP)}
+                >
+                  Aa－
+                </button>
+                <span className="wb-zoom-value">{selectedBox ? selectedBox.fontSize || DEFAULT_FONT_SIZE : "—"}</span>
+                <button
+                  className="wb-btn wb-btn-ghost wb-btn-sm"
+                  disabled={!selectedBoxId}
+                  onClick={() => changeSelectedBoxFontSize(FONT_SIZE_STEP)}
+                >
+                  Aa＋
+                </button>
+                <button
+                  className={"wb-btn wb-btn-sm" + (selectedBox && selectedBox.bold ? " wb-btn-primary" : " wb-btn-ghost")}
+                  disabled={!selectedBoxId}
+                  onClick={toggleSelectedBoxBold}
+                  style={{ fontWeight: 800 }}
+                >
+                  B
+                </button>
+              </div>
+
               <div className="wb-swatches">
                 {SWATCHES.map((color) => (
                   <button
@@ -627,7 +678,6 @@ export default function Whiteboard() {
               handleBoxHeaderPointerUp(e);
               handleResizeHandlePointerUp(e);
             }}
-            onDoubleClick={handleViewportDoubleClick}
           >
             {boardLoading ? (
               <div className="wb-empty">Loading board...</div>
@@ -658,7 +708,7 @@ export default function Whiteboard() {
           </div>
 
           <div className="wb-hint wb-board-hint">
-            Double-click an empty area to add a text box. Drag empty space to pan, scroll to zoom.
+            Click an empty area to add a text box. Drag empty space to pan, scroll to zoom.
           </div>
         </div>
       )}
