@@ -317,11 +317,9 @@
   padding: 2px 4px;
 }
 .wb-textbox-delete:hover { color: rgba(0, 0, 0, 0.8); }
-.wb-textbox-textarea {
+.wb-textbox-editable {
   flex: 1;
   width: 100%;
-  border: none;
-  resize: none;
   background: transparent;
   font-family: inherit;
   font-size: 15px;
@@ -329,4 +327,17 @@
   padding: 8px 10px;
   color: #1F2328;
   outline: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+}
+.wb-textbox-editable:empty:before {
+  content: attr(data-placeholder);
+  color: rgba(128, 128, 128, 0.6);
+  pointer-events: none;
+}
+.wb-textbox-editable b,
+.wb-textbox-editable strong {
+  font-weight: 800;
 }

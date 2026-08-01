@@ -112,7 +112,8 @@ Placeholder for a future spec session. Suggested next step: define it the same w
 **Gameplay / usage**
 - Not a freehand-drawing tool — a lightweight, Miro-style board for typing notes: click "+ Text" or click empty space to create a movable text box there, type directly into it
 - Pan by dragging empty space, zoom with the scroll wheel (centered on the cursor), "Reset view" recenters
-- Each text box can be moved (drag its header), resized (drag its corner handle, and it also grows automatically as typed content no longer fits), recolored with a muted/dusty palette (or set to "no fill" for free-floating plain text with no card chrome), sized via font presets (Text/Subtitle/Title) or a fine +/- stepper, bolded, or deleted
+- Each text box can be moved (drag its header), resized (drag its corner handle, and it also grows automatically as typed content no longer fits), recolored with a muted/dusty palette (or set to "no fill" for free-floating plain text with no card chrome), sized via font presets (Text/Subtitle/Title) or a fine +/- stepper, or deleted
+- Bold applies to just the selected text within a note (select a word/phrase, then Ctrl+B or the toolbar "B"), not the whole note — like a normal text editor
 - "Clear board" empties a student's board but keeps them in the roster; "Delete student" removes the roster entry and its board entirely
 - A board is a large but finite area (not infinite), matching the "doesn't need to be infinite" requirement
 - No scoring, no timer

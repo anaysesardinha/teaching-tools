@@ -43,24 +43,55 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+// older saved boards stored plain text (+ a whole-box bold flag) before bold
+// became an inline, select-then-Ctrl+B format — convert once on load so a
+// previously-bold note still reads as bold, just now as inline markup
+function migrateBoxToHtml(raw) {
+  if (raw.html !== undefined) return raw;
+  const { text, bold, ...rest } = raw;
+  const escaped = String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+  return { ...rest, html: bold ? `<b>${escaped}</b>` : escaped };
+}
+
 function WhiteboardTextBox({
   box,
   isSelected,
   onHeaderPointerDown,
   onResizeHandlePointerDown,
   onSelect,
-  onChangeText,
+  onChangeHtml,
   onDelete,
   justCreated,
 }) {
   const isPlain = box.color === TRANSPARENT_COLOR;
+  // set once at mount from the loaded/initial value, then left alone —
+  // re-applying it on every render would fight the browser's own DOM edits
+  // and reset the cursor position while typing
+  const [initialHtml] = useState(box.html || "");
 
-  function handleChange(e) {
-    const value = e.target.value;
+  function handleInput(e) {
     // grow the box to fit content that no longer fits — never shrinks on
     // its own, so a manual resize (bigger or smaller) is never undone here
-    const needed = TEXTBOX_HEADER_HEIGHT + e.target.scrollHeight;
-    onChangeText(box.id, value, needed > box.height ? needed : undefined);
+    const needed = TEXTBOX_HEADER_HEIGHT + e.currentTarget.scrollHeight;
+    onChangeHtml(box.id, e.currentTarget.innerHTML, needed > box.height ? needed : undefined);
+  }
+
+  function handleKeyDown(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+      e.preventDefault();
+      document.execCommand("bold");
+      handleInput(e);
+    }
+  }
+
+  function handlePaste(e) {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
   }
 
   return (
@@ -96,15 +127,18 @@ function WhiteboardTextBox({
           ×
         </button>
       </div>
-      <textarea
-        className="wb-textbox-textarea"
-        value={box.text}
-        onChange={handleChange}
-        placeholder="Type here..."
+      <div
+        className="wb-textbox-editable"
+        contentEditable
+        suppressContentEditableWarning
+        data-placeholder="Type here..."
+        dangerouslySetInnerHTML={{ __html: initialHtml }}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         autoFocus={justCreated}
         style={{
           fontSize: box.fontSize || DEFAULT_FONT_SIZE,
-          fontWeight: box.bold ? 800 : 500,
           // pastel note backgrounds are always light, so fixed dark ink works;
           // plain/no-fill text sits on the theme's own background instead
           color: isPlain ? "var(--ink)" : undefined,
@@ -157,7 +191,7 @@ export default function Whiteboard() {
     try {
       const data = await getJSON(boardKey(studentId), null);
       const board = data && typeof data === "object" ? data : {};
-      const boxes = Array.isArray(board.textBoxes) ? board.textBoxes : [];
+      const boxes = (Array.isArray(board.textBoxes) ? board.textBoxes : []).map(migrateBoxToHtml);
       const viewport = board.viewport || {};
       suppressSaveRef.current = true;
       setTextBoxes(boxes);
@@ -313,10 +347,9 @@ export default function Whiteboard() {
       y,
       width: DEFAULT_BOX_WIDTH,
       height: DEFAULT_BOX_HEIGHT,
-      text: "",
+      html: "",
       color: SWATCHES[1],
       fontSize: DEFAULT_FONT_SIZE,
-      bold: false,
       zIndex: nextZIndexRef.current,
     };
     justCreatedIdRef.current = id;
@@ -334,8 +367,8 @@ export default function Whiteboard() {
     setTextBoxes((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   }
 
-  function changeBoxText(id, text, growHeight) {
-    updateBox(id, growHeight ? { text, height: growHeight } : { text });
+  function changeBoxHtml(id, html, growHeight) {
+    updateBox(id, growHeight ? { html, height: growHeight } : { html });
   }
 
   function selectBox(id) {
@@ -366,10 +399,15 @@ export default function Whiteboard() {
     updateBox(selectedBoxId, { fontSize: value });
   }
 
-  function toggleSelectedBoxBold() {
-    if (!selectedBoxId) return;
-    const current = textBoxes.find((b) => b.id === selectedBoxId);
-    updateBox(selectedBoxId, { bold: !(current && current.bold) });
+  // preventDefault on mousedown keeps focus (and the text selection) on
+  // whichever note is being edited, so the click doesn't blur it away —
+  // execCommand then toggles bold on that still-active selection
+  function handleBoldMouseDown(e) {
+    e.preventDefault();
+  }
+
+  function applyBoldToSelection() {
+    document.execCommand("bold");
   }
 
   function handleViewportPointerDown(e) {
@@ -666,10 +704,12 @@ export default function Whiteboard() {
                   Aa＋
                 </button>
                 <button
-                  className={"wb-btn wb-btn-sm" + (selectedBox && selectedBox.bold ? " wb-btn-primary" : " wb-btn-ghost")}
+                  className="wb-btn wb-btn-ghost wb-btn-sm"
                   disabled={!selectedBoxId}
-                  onClick={toggleSelectedBoxBold}
+                  onMouseDown={handleBoldMouseDown}
+                  onClick={applyBoldToSelection}
                   style={{ fontWeight: 800 }}
+                  title="Bold the selected text (Ctrl+B)"
                 >
                   B
                 </button>
@@ -747,7 +787,7 @@ export default function Whiteboard() {
                     onHeaderPointerDown={handleBoxHeaderPointerDown}
                     onResizeHandlePointerDown={handleResizeHandlePointerDown}
                     onSelect={selectBox}
-                    onChangeText={changeBoxText}
+                    onChangeHtml={changeBoxHtml}
                     onDelete={deleteBox}
                   />
                 ))}
