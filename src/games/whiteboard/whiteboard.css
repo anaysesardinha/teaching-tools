@@ -322,7 +322,7 @@
   width: 100%;
   background: transparent;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 15px; /* keep in sync with DEFAULT_FONT_SIZE in Whiteboard.jsx */
   line-height: 1.4;
   padding: 8px 10px;
   color: #1F2328;

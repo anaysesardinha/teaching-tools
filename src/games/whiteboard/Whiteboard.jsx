@@ -30,9 +30,6 @@ const SWATCHES = [
   "#DEE0E4",
 ];
 const DEFAULT_FONT_SIZE = 15;
-const MIN_FONT_SIZE = 11;
-const MAX_FONT_SIZE = 40;
-const FONT_SIZE_STEP = 2;
 const FONT_SIZE_PRESETS = [
   { label: "Text", value: 15 },
   { label: "Subtitle", value: 20 },
@@ -43,18 +40,33 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-// older saved boards stored plain text (+ a whole-box bold flag) before bold
-// became an inline, select-then-Ctrl+B format — convert once on load so a
-// previously-bold note still reads as bold, just now as inline markup
+function wrapIfSized(html, fontSize) {
+  return fontSize && fontSize !== DEFAULT_FONT_SIZE ? `<span style="font-size:${fontSize}px">${html}</span>` : html;
+}
+
+// older saved boards stored a whole-note "bold" flag and/or a whole-note
+// "fontSize" before both became inline, select-then-format properties —
+// migrate once on load so a previously bold/title-sized note still reads
+// that way, just as inline markup the teacher can now edit per-selection
 function migrateBoxToHtml(raw) {
-  if (raw.html !== undefined) return raw;
-  const { text, bold, ...rest } = raw;
-  const escaped = String(text || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br>");
-  return { ...rest, html: bold ? `<b>${escaped}</b>` : escaped };
+  if (raw.html === undefined) {
+    // very old format: plain text, no rich formatting at all yet
+    const { text, bold, fontSize, ...rest } = raw;
+    const escaped = String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br>");
+    const html = wrapIfSized(bold ? `<b>${escaped}</b>` : escaped, fontSize);
+    return { ...rest, html };
+  }
+  if (raw.fontSize !== undefined) {
+    // intermediate format: rich text existed, but font size was still a
+    // whole-note property rather than an inline span
+    const { fontSize, ...rest } = raw;
+    return { ...rest, html: wrapIfSized(raw.html, fontSize) };
+  }
+  return raw;
 }
 
 function WhiteboardTextBox({
@@ -138,7 +150,6 @@ function WhiteboardTextBox({
         onPaste={handlePaste}
         autoFocus={justCreated}
         style={{
-          fontSize: box.fontSize || DEFAULT_FONT_SIZE,
           // pastel note backgrounds are always light, so fixed dark ink works;
           // plain/no-fill text sits on the theme's own background instead
           color: isPlain ? "var(--ink)" : undefined,
@@ -324,7 +335,6 @@ export default function Whiteboard() {
   }
 
   const activeStudent = students.find((s) => s.id === activeStudentId);
-  const selectedBox = textBoxes.find((b) => b.id === selectedBoxId);
 
   function getViewportRect() {
     return viewportRef.current.getBoundingClientRect();
@@ -349,7 +359,6 @@ export default function Whiteboard() {
       height: DEFAULT_BOX_HEIGHT,
       html: "",
       color: SWATCHES[1],
-      fontSize: DEFAULT_FONT_SIZE,
       zIndex: nextZIndexRef.current,
     };
     justCreatedIdRef.current = id;
@@ -387,27 +396,37 @@ export default function Whiteboard() {
     updateBox(selectedBoxId, { color });
   }
 
-  function changeSelectedBoxFontSize(delta) {
-    if (!selectedBoxId) return;
-    const current = textBoxes.find((b) => b.id === selectedBoxId);
-    const base = current && current.fontSize ? current.fontSize : DEFAULT_FONT_SIZE;
-    updateBox(selectedBoxId, { fontSize: clamp(base + delta, MIN_FONT_SIZE, MAX_FONT_SIZE) });
-  }
-
-  function setSelectedBoxFontSizePreset(value) {
-    if (!selectedBoxId) return;
-    updateBox(selectedBoxId, { fontSize: value });
-  }
-
   // preventDefault on mousedown keeps focus (and the text selection) on
   // whichever note is being edited, so the click doesn't blur it away —
-  // execCommand then toggles bold on that still-active selection
-  function handleBoldMouseDown(e) {
+  // execCommand then formats that still-active selection
+  function handleFormatMouseDown(e) {
     e.preventDefault();
   }
 
   function applyBoldToSelection() {
     document.execCommand("bold");
+  }
+
+  // there's no execCommand for an arbitrary px font size, so this reuses the
+  // legacy "fontSize 7" command purely to get the browser's own selection
+  // handling (splitting partial nodes etc. correctly) to wrap the selection
+  // in a <font size="7">, then swaps that for the real size we want
+  function applyFontSizeToSelection(px) {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const activeElement = document.activeElement;
+    document.execCommand("fontSize", false, "7");
+    const scope =
+      activeElement && activeElement.classList && activeElement.classList.contains("wb-textbox-editable")
+        ? activeElement
+        : document;
+    scope.querySelectorAll('font[size="7"]').forEach((el) => {
+      el.removeAttribute("size");
+      el.style.fontSize = px + "px";
+    });
+    // the manual DOM edit above doesn't fire a native input event on its
+    // own (unlike execCommand), so nudge it to keep React state in sync
+    if (activeElement) activeElement.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function handleViewportPointerDown(e) {
@@ -676,14 +695,11 @@ export default function Whiteboard() {
                 {FONT_SIZE_PRESETS.map((preset) => (
                   <button
                     key={preset.label}
-                    className={
-                      "wb-btn wb-btn-sm" +
-                      (selectedBox && (selectedBox.fontSize || DEFAULT_FONT_SIZE) === preset.value
-                        ? " wb-btn-primary"
-                        : " wb-btn-ghost")
-                    }
+                    className="wb-btn wb-btn-ghost wb-btn-sm"
                     disabled={!selectedBoxId}
-                    onClick={() => setSelectedBoxFontSizePreset(preset.value)}
+                    onMouseDown={handleFormatMouseDown}
+                    onClick={() => applyFontSizeToSelection(preset.value)}
+                    title={`Set selected text to ${preset.label} size`}
                   >
                     {preset.label}
                   </button>
@@ -691,22 +707,7 @@ export default function Whiteboard() {
                 <button
                   className="wb-btn wb-btn-ghost wb-btn-sm"
                   disabled={!selectedBoxId}
-                  onClick={() => changeSelectedBoxFontSize(-FONT_SIZE_STEP)}
-                >
-                  Aa－
-                </button>
-                <span className="wb-zoom-value">{selectedBox ? selectedBox.fontSize || DEFAULT_FONT_SIZE : "—"}</span>
-                <button
-                  className="wb-btn wb-btn-ghost wb-btn-sm"
-                  disabled={!selectedBoxId}
-                  onClick={() => changeSelectedBoxFontSize(FONT_SIZE_STEP)}
-                >
-                  Aa＋
-                </button>
-                <button
-                  className="wb-btn wb-btn-ghost wb-btn-sm"
-                  disabled={!selectedBoxId}
-                  onMouseDown={handleBoldMouseDown}
+                  onMouseDown={handleFormatMouseDown}
                   onClick={applyBoldToSelection}
                   style={{ fontWeight: 800 }}
                   title="Bold the selected text (Ctrl+B)"
