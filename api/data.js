@@ -1,4 +1,4 @@
-import { Redis } from "@upstash/redis";
+import Redis from "ioredis";
 
 const ALLOWED_KEYS = new Set([
   "unscramble-sets",
@@ -6,13 +6,18 @@ const ALLOWED_KEYS = new Set([
   "spin-the-wheel-sets",
 ]);
 
+let redisClient = null;
 function getRedis() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) {
-    throw new Error("Redis env vars are not configured");
+  if (!process.env.REDIS_URL) {
+    throw new Error("REDIS_URL is not configured");
   }
-  return new Redis({ url, token });
+  if (!redisClient) {
+    redisClient = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 2,
+      connectTimeout: 5000,
+    });
+  }
+  return redisClient;
 }
 
 export default async function handler(req, res) {
@@ -38,14 +43,14 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const value = await redis.get(key);
-      res.status(200).json({ value: value ?? null });
+      const raw = await redis.get(key);
+      res.status(200).json({ value: raw ? JSON.parse(raw) : null });
       return;
     }
 
     if (req.method === "PUT") {
       const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-      await redis.set(key, body.value);
+      await redis.set(key, JSON.stringify(body.value));
       res.status(200).json({ ok: true });
       return;
     }
