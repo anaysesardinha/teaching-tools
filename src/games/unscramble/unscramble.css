@@ -222,3 +222,4 @@
   color: var(--accent-strong);
   font-weight: 700;
 }
+.uw-flash-error { color: var(--error); }

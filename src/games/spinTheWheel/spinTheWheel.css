@@ -128,6 +128,7 @@
   color: var(--accent-strong);
   font-weight: 700;
 }
+.stw-flash-error { color: var(--error); }
 
 .stw-wheel-area {
   position: relative;

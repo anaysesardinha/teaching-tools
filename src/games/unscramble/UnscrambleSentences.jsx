@@ -47,16 +47,29 @@ export default function UnscrambleSentences() {
   const [tray, setTray] = useState([]);
   const [slots, setSlots] = useState([]);
   const [saveFlash, setSaveFlash] = useState(false);
+  const [persistError, setPersistError] = useState(false);
+
+  const loadSets = useCallback(async () => {
+    setView("loading");
+    try {
+      const parsed = await getJSON(STORAGE_KEY, []);
+      setSets(Array.isArray(parsed) ? parsed : []);
+      setView("list");
+    } catch (e) {
+      setView("error");
+    }
+  }, []);
 
   useEffect(() => {
-    const parsed = getJSON(STORAGE_KEY, []);
-    setSets(Array.isArray(parsed) ? parsed : []);
-    setView("list");
-  }, []);
+    loadSets();
+  }, [loadSets]);
 
   const persistSets = useCallback((nextSets) => {
     setSets(nextSets);
-    setJSON(STORAGE_KEY, nextSets);
+    setJSON(STORAGE_KEY, nextSets).catch(() => {
+      setPersistError(true);
+      setTimeout(() => setPersistError(false), 2500);
+    });
   }, []);
 
   function openNewSetForm() {
@@ -107,9 +120,12 @@ export default function UnscrambleSentences() {
   }
 
   function resetAllData() {
-    removeItem(STORAGE_KEY);
     setSets([]);
     setConfirmResetAll(false);
+    removeItem(STORAGE_KEY).catch(() => {
+      setPersistError(true);
+      setTimeout(() => setPersistError(false), 2500);
+    });
   }
 
   function startPlay(setId) {
@@ -179,12 +195,24 @@ export default function UnscrambleSentences() {
           <div className="uw-empty">Loading saved sets...</div>
         )}
 
+        {view === "error" && (
+          <div className="uw-card uw-empty">
+            Couldn't load your sets. Check your connection and try again.
+            <div className="uw-row" style={{ justifyContent: "center", marginTop: 14 }}>
+              <button className="uw-btn uw-btn-primary uw-btn-sm" onClick={loadSets}>
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
         {view === "list" && (
           <>
             <div className="uw-eyebrow">Unscramble Sentences</div>
             <div className="uw-topbar">
               <h1 className="uw-title" style={{ marginBottom: 0 }}>Sentence sets</h1>
               {saveFlash && <span className="uw-flash">Set saved!</span>}
+              {persistError && <span className="uw-flash uw-flash-error">Couldn't save — check connection</span>}
             </div>
 
             {sets.length === 0 ? (

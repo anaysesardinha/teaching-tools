@@ -35,13 +35,23 @@ export default function SpinTheWheel() {
   const [spinning, setSpinning] = useState(false);
   const [winningIndex, setWinningIndex] = useState(null);
   const [saveFlash, setSaveFlash] = useState(false);
+  const [persistError, setPersistError] = useState(false);
   const spinTimeoutRef = useRef(null);
 
-  useEffect(() => {
-    const parsed = getJSON(STORAGE_KEY, []);
-    setSets(Array.isArray(parsed) ? parsed : []);
-    setView("list");
+  const loadSets = useCallback(async () => {
+    setView("loading");
+    try {
+      const parsed = await getJSON(STORAGE_KEY, []);
+      setSets(Array.isArray(parsed) ? parsed : []);
+      setView("list");
+    } catch (e) {
+      setView("error");
+    }
   }, []);
+
+  useEffect(() => {
+    loadSets();
+  }, [loadSets]);
 
   useEffect(() => {
     return () => {
@@ -51,7 +61,10 @@ export default function SpinTheWheel() {
 
   const persistSets = useCallback((nextSets) => {
     setSets(nextSets);
-    setJSON(STORAGE_KEY, nextSets);
+    setJSON(STORAGE_KEY, nextSets).catch(() => {
+      setPersistError(true);
+      setTimeout(() => setPersistError(false), 2500);
+    });
   }, []);
 
   function openNewSetForm() {
@@ -102,9 +115,12 @@ export default function SpinTheWheel() {
   }
 
   function resetAllData() {
-    removeItem(STORAGE_KEY);
     setSets([]);
     setConfirmResetAll(false);
+    removeItem(STORAGE_KEY).catch(() => {
+      setPersistError(true);
+      setTimeout(() => setPersistError(false), 2500);
+    });
   }
 
   function startPlay(setId) {
@@ -192,12 +208,24 @@ export default function SpinTheWheel() {
           <div className="stw-empty">Loading saved sets...</div>
         )}
 
+        {view === "error" && (
+          <div className="stw-card stw-empty">
+            Couldn't load your sets. Check your connection and try again.
+            <div className="stw-row" style={{ justifyContent: "center", marginTop: 14 }}>
+              <button className="stw-btn stw-btn-primary stw-btn-sm" onClick={loadSets}>
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
         {view === "list" && (
           <>
             <div className="stw-eyebrow">Spin the Wheel</div>
             <div className="stw-topbar">
               <h1 className="stw-title" style={{ marginBottom: 0 }}>Item sets</h1>
               {saveFlash && <span className="stw-flash">Set saved!</span>}
+              {persistError && <span className="stw-flash stw-flash-error">Couldn't save — check connection</span>}
             </div>
 
             {sets.length === 0 ? (
