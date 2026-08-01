@@ -43,7 +43,9 @@ async function request(method, key, body) {
     });
 
   let res = await attempt(passphrase);
-  if (res.status === 401 && !isRead) {
+  // Reads are normally public and never 401, except for whiteboard keys
+  // (private student data) — prompt there too, not just on writes.
+  if (res.status === 401) {
     passphrase = promptForPassphrase();
     res = await attempt(passphrase);
   }

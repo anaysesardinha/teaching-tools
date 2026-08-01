@@ -4,6 +4,7 @@ import Home from "./pages/Home.jsx";
 import UnscrambleSentences from "./games/unscramble/UnscrambleSentences.jsx";
 import OpenTheBoxes from "./games/openTheBoxes/OpenTheBoxes.jsx";
 import SpinTheWheel from "./games/spinTheWheel/SpinTheWheel.jsx";
+import Whiteboard from "./games/whiteboard/Whiteboard.jsx";
 import BackgroundFX from "./components/BackgroundFX.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 
@@ -20,6 +21,8 @@ export default function App() {
         <Route path="/open-the-boxes/:setId" element={<OpenTheBoxes />} />
         <Route path="/spin-the-wheel" element={<SpinTheWheel />} />
         <Route path="/spin-the-wheel/:setId" element={<SpinTheWheel />} />
+        <Route path="/whiteboard" element={<Whiteboard />} />
+        <Route path="/whiteboard/:studentId" element={<Whiteboard />} />
       </Routes>
     </BrowserRouter>
   );

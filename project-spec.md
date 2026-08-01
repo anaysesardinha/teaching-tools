@@ -101,6 +101,22 @@ Derived from the prototype, meant to be shared across all four games for visual 
 
 Placeholder for a future spec session. Suggested next step: define it the same way the other three games were defined (usage context confirmed, one MVP decision at a time, prototype before building for real).
 
+## Whiteboard (finalized spec)
+
+**Usage context:** same as every other tool — the teacher runs it during a live video call, sharing their own screen. No student-facing device, login, or realtime sync.
+
+**Content setup**
+- The teacher keeps a roster of students (just a name each)
+- Each student has their own persistent board that reopens exactly as it was left last time — no recreating or re-sharing anything between classes
+
+**Gameplay / usage**
+- Not a freehand-drawing tool — a lightweight, Miro-style board for typing notes: click "+ Text" or double-click empty space to create a movable text box, type directly into it
+- Pan by dragging empty space, zoom with the scroll wheel (centered on the cursor), "Reset view" recenters
+- Each text box can be moved (drag its header), recolored (toolbar swatches), or deleted
+- "Clear board" empties a student's board but keeps them in the roster; "Delete student" removes the roster entry and its board entirely
+- A board is a large but finite area (not infinite), matching the "doesn't need to be infinite" requirement
+- No scoring, no timer
+
 ## Open questions for later
 
 - Should sets eventually be shareable/exportable between the teacher's devices, or is per-device storage enough?

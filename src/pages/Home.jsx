@@ -25,6 +25,13 @@ const GAMES = [
     enabled: true,
   },
   {
+    id: "whiteboard",
+    name: "Whiteboard",
+    description: "A persistent board per student — pan, zoom, and jot notes.",
+    path: "/whiteboard",
+    enabled: true,
+  },
+  {
     id: "fill-in-the-blanks",
     name: "Fill in the Blanks",
     description: "Coming soon.",
@@ -36,8 +43,8 @@ export default function Home() {
   return (
     <div className="home-root">
       <div className="home-shell">
-        <div className="home-eyebrow">Classroom Games</div>
-        <h1 className="home-title">Pick a game</h1>
+        <div className="home-eyebrow">Classroom Toolkit</div>
+        <h1 className="home-title">Select a tool to build your next class.</h1>
 
         <div className="home-grid">
           {GAMES.map((game) =>
