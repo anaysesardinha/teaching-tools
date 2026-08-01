@@ -12,6 +12,9 @@ const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
 const DEFAULT_BOX_WIDTH = 220;
 const DEFAULT_BOX_HEIGHT = 120;
+const MIN_BOX_WIDTH = 140;
+const MIN_BOX_HEIGHT = 60;
+const TEXTBOX_HEADER_HEIGHT = 18;
 const SAVE_DEBOUNCE_MS = 600;
 const SWATCHES = ["#FEF08A", "#BBF7D0", "#BFDBFE", "#FBCFE8", "#FED7AA", "#E5E7EB"];
 
@@ -19,7 +22,24 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function WhiteboardTextBox({ box, isSelected, onHeaderPointerDown, onSelect, onChangeText, onDelete, justCreated }) {
+function WhiteboardTextBox({
+  box,
+  isSelected,
+  onHeaderPointerDown,
+  onResizeHandlePointerDown,
+  onSelect,
+  onChangeText,
+  onDelete,
+  justCreated,
+}) {
+  function handleChange(e) {
+    const value = e.target.value;
+    // grow the box to fit content that no longer fits — never shrinks on
+    // its own, so a manual resize (bigger or smaller) is never undone here
+    const needed = TEXTBOX_HEADER_HEIGHT + e.target.scrollHeight;
+    onChangeText(box.id, value, needed > box.height ? needed : undefined);
+  }
+
   return (
     <div
       className={"wb-textbox" + (isSelected ? " wb-textbox-selected" : "")}
@@ -49,9 +69,14 @@ function WhiteboardTextBox({ box, isSelected, onHeaderPointerDown, onSelect, onC
       <textarea
         className="wb-textbox-textarea"
         value={box.text}
-        onChange={(e) => onChangeText(box.id, e.target.value)}
+        onChange={handleChange}
         placeholder="Type here..."
         autoFocus={justCreated}
+      />
+      <div
+        className="wb-textbox-resize-handle"
+        onPointerDown={(e) => onResizeHandlePointerDown(e, box)}
+        aria-hidden="true"
       />
     </div>
   );
@@ -82,6 +107,7 @@ export default function Whiteboard() {
 
   const panDragRef = useRef(null);
   const boxDragRef = useRef(null);
+  const resizeDragRef = useRef(null);
   const nextZIndexRef = useRef(1);
   const justCreatedIdRef = useRef(null);
 
@@ -268,6 +294,10 @@ export default function Whiteboard() {
     setTextBoxes((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   }
 
+  function changeBoxText(id, text, growHeight) {
+    updateBox(id, growHeight ? { text, height: growHeight } : { text });
+  }
+
   function selectBox(id) {
     setSelectedBoxId(id);
     nextZIndexRef.current += 1;
@@ -343,6 +373,37 @@ export default function Whiteboard() {
     const drag = boxDragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
     boxDragRef.current = null;
+  }
+
+  function handleResizeHandlePointerDown(e, box) {
+    e.stopPropagation();
+    selectBox(box.id);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    resizeDragRef.current = {
+      id: box.id,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startWidth: box.width,
+      startHeight: box.height,
+    };
+  }
+
+  function handleResizeHandlePointerMove(e) {
+    const drag = resizeDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const dx = (e.clientX - drag.startClientX) / zoomRef.current;
+    const dy = (e.clientY - drag.startClientY) / zoomRef.current;
+    updateBox(drag.id, {
+      width: clamp(drag.startWidth + dx, MIN_BOX_WIDTH, Infinity),
+      height: clamp(drag.startHeight + dy, MIN_BOX_HEIGHT, Infinity),
+    });
+  }
+
+  function handleResizeHandlePointerUp(e) {
+    const drag = resizeDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    resizeDragRef.current = null;
   }
 
   // native (non-synthetic) wheel listener: React's passive root listener
@@ -559,10 +620,12 @@ export default function Whiteboard() {
             onPointerMove={(e) => {
               handleViewportPointerMove(e);
               handleBoxHeaderPointerMove(e);
+              handleResizeHandlePointerMove(e);
             }}
             onPointerUp={(e) => {
               handleViewportPointerUp(e);
               handleBoxHeaderPointerUp(e);
+              handleResizeHandlePointerUp(e);
             }}
             onDoubleClick={handleViewportDoubleClick}
           >
@@ -584,8 +647,9 @@ export default function Whiteboard() {
                     isSelected={selectedBoxId === box.id}
                     justCreated={justCreatedIdRef.current === box.id}
                     onHeaderPointerDown={handleBoxHeaderPointerDown}
+                    onResizeHandlePointerDown={handleResizeHandlePointerDown}
                     onSelect={selectBox}
-                    onChangeText={(id, text) => updateBox(id, { text })}
+                    onChangeText={changeBoxText}
                     onDelete={deleteBox}
                   />
                 ))}

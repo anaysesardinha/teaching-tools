@@ -263,6 +263,17 @@
   color: rgba(0, 0, 0, 0.35);
   user-select: none;
 }
+.wb-textbox-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  background:
+    linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.28) 50%, rgba(0, 0, 0, 0.28) 62%, transparent 62%),
+    linear-gradient(135deg, transparent 72%, rgba(0, 0, 0, 0.28) 72%, rgba(0, 0, 0, 0.28) 84%, transparent 84%);
+}
 .wb-textbox-delete {
   border: none;
   background: transparent;
