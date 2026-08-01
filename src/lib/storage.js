@@ -22,9 +22,15 @@ function promptForPassphrase() {
   return value;
 }
 
+const READ_METHODS = new Set(["GET"]);
+
 async function request(method, key, body) {
+  const isRead = READ_METHODS.has(method);
+  // Reads are public (e.g. a student opening a shared play link) — only
+  // attach/prompt for a passphrase when one is already known. Writes always
+  // require it.
   let passphrase = getStoredPassphrase();
-  if (!passphrase) passphrase = promptForPassphrase();
+  if (!passphrase && !isRead) passphrase = promptForPassphrase();
 
   const attempt = (pass) =>
     fetch(`/api/data?key=${encodeURIComponent(key)}`, {
@@ -37,7 +43,7 @@ async function request(method, key, body) {
     });
 
   let res = await attempt(passphrase);
-  if (res.status === 401) {
+  if (res.status === 401 && !isRead) {
     passphrase = promptForPassphrase();
     res = await attempt(passphrase);
   }

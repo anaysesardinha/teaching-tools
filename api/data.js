@@ -21,10 +21,14 @@ function getRedis() {
 }
 
 export default async function handler(req, res) {
-  const passphrase = req.headers["x-app-passphrase"];
-  if (!process.env.APP_PASSPHRASE || passphrase !== process.env.APP_PASSPHRASE) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
+  // Reading is public (students can open a shared play link with no passphrase).
+  // Writing is not: only someone with the passphrase can create/edit/delete/reset sets.
+  if (req.method !== "GET") {
+    const passphrase = req.headers["x-app-passphrase"];
+    if (!process.env.APP_PASSPHRASE || passphrase !== process.env.APP_PASSPHRASE) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
   }
 
   const key = req.query.key;

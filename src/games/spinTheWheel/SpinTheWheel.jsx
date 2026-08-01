@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { getJSON, setJSON, removeItem } from "../../lib/storage.js";
 import "./spinTheWheel.css";
 
@@ -17,11 +17,13 @@ function parseItems(text) {
 }
 
 export default function SpinTheWheel() {
-  const [view, setView] = useState("loading"); // loading | list | form | play
+  const { setId: sharedSetId } = useParams();
+  const [view, setView] = useState("loading"); // loading | list | form | play | notfound | error
   const [sets, setSets] = useState([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmResetAll, setConfirmResetAll] = useState(false);
   const [activeSetId, setActiveSetId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
 
   // form state
   const [formName, setFormName] = useState("");
@@ -42,12 +44,27 @@ export default function SpinTheWheel() {
     setView("loading");
     try {
       const parsed = await getJSON(STORAGE_KEY, []);
-      setSets(Array.isArray(parsed) ? parsed : []);
-      setView("list");
+      const list = Array.isArray(parsed) ? parsed : [];
+      setSets(list);
+      if (sharedSetId) {
+        const shared = list.find((s) => s.id === sharedSetId);
+        if (shared) {
+          setActiveSetId(shared.id);
+          setDrawnFlags(Array(shared.items.length).fill(false));
+          setRotation(0);
+          setSpinning(false);
+          setWinningIndex(null);
+          setView("play");
+        } else {
+          setView("notfound");
+        }
+      } else {
+        setView("list");
+      }
     } catch (e) {
       setView("error");
     }
-  }, []);
+  }, [sharedSetId]);
 
   useEffect(() => {
     loadSets();
@@ -120,6 +137,14 @@ export default function SpinTheWheel() {
     removeItem(STORAGE_KEY).catch(() => {
       setPersistError(true);
       setTimeout(() => setPersistError(false), 2500);
+    });
+  }
+
+  function copyShareLink(setId) {
+    const url = `${window.location.origin}/spin-the-wheel/${setId}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiedId(setId);
+      setTimeout(() => setCopiedId(null), 1500);
     });
   }
 
@@ -219,6 +244,17 @@ export default function SpinTheWheel() {
           </div>
         )}
 
+        {view === "notfound" && (
+          <div className="stw-card stw-empty">
+            This set doesn't exist or was removed.
+            <div className="stw-row" style={{ justifyContent: "center", marginTop: 14 }}>
+              <Link className="stw-btn stw-btn-primary stw-btn-sm" to="/">
+                Home
+              </Link>
+            </div>
+          </div>
+        )}
+
         {view === "list" && (
           <>
             <div className="stw-eyebrow">Spin the Wheel</div>
@@ -243,6 +279,9 @@ export default function SpinTheWheel() {
                     <div className="stw-row">
                       <button className="stw-btn stw-btn-primary stw-btn-sm" onClick={() => startPlay(s.id)}>
                         Play
+                      </button>
+                      <button className="stw-btn stw-btn-ghost stw-btn-sm" onClick={() => copyShareLink(s.id)}>
+                        {copiedId === s.id ? "Copied!" : "Share"}
                       </button>
                       {confirmDeleteId === s.id ? (
                         <button className="stw-btn stw-btn-danger stw-btn-sm" onClick={() => deleteSet(s.id)}>

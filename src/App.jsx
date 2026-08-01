@@ -15,8 +15,11 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/unscramble" element={<UnscrambleSentences />} />
+        <Route path="/unscramble/:setId" element={<UnscrambleSentences />} />
         <Route path="/open-the-boxes" element={<OpenTheBoxes />} />
+        <Route path="/open-the-boxes/:setId" element={<OpenTheBoxes />} />
         <Route path="/spin-the-wheel" element={<SpinTheWheel />} />
+        <Route path="/spin-the-wheel/:setId" element={<SpinTheWheel />} />
       </Routes>
     </BrowserRouter>
   );

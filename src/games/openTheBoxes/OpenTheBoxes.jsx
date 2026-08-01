@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { getJSON, setJSON, removeItem } from "../../lib/storage.js";
 import "./openTheBoxes.css";
 
@@ -13,11 +13,13 @@ function parseQuestions(text) {
 }
 
 export default function OpenTheBoxes() {
-  const [view, setView] = useState("loading"); // loading | list | form | play
+  const { setId: sharedSetId } = useParams();
+  const [view, setView] = useState("loading"); // loading | list | form | play | notfound | error
   const [sets, setSets] = useState([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmResetAll, setConfirmResetAll] = useState(false);
   const [activeSetId, setActiveSetId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
 
   // form state
   const [formName, setFormName] = useState("");
@@ -35,12 +37,25 @@ export default function OpenTheBoxes() {
     setView("loading");
     try {
       const parsed = await getJSON(STORAGE_KEY, []);
-      setSets(Array.isArray(parsed) ? parsed : []);
-      setView("list");
+      const list = Array.isArray(parsed) ? parsed : [];
+      setSets(list);
+      if (sharedSetId) {
+        const shared = list.find((s) => s.id === sharedSetId);
+        if (shared) {
+          setActiveSetId(shared.id);
+          setOpenedFlags(Array(shared.questions.length).fill(false));
+          setOpenedBoxIndex(null);
+          setView("play");
+        } else {
+          setView("notfound");
+        }
+      } else {
+        setView("list");
+      }
     } catch (e) {
       setView("error");
     }
-  }, []);
+  }, [sharedSetId]);
 
   useEffect(() => {
     loadSets();
@@ -110,6 +125,14 @@ export default function OpenTheBoxes() {
     });
   }
 
+  function copyShareLink(setId) {
+    const url = `${window.location.origin}/open-the-boxes/${setId}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiedId(setId);
+      setTimeout(() => setCopiedId(null), 1500);
+    });
+  }
+
   function startPlay(setId) {
     const set = sets.find((s) => s.id === setId);
     setActiveSetId(setId);
@@ -152,6 +175,17 @@ export default function OpenTheBoxes() {
           </div>
         )}
 
+        {view === "notfound" && (
+          <div className="otb-card otb-empty">
+            This set doesn't exist or was removed.
+            <div className="otb-row" style={{ justifyContent: "center", marginTop: 14 }}>
+              <Link className="otb-btn otb-btn-primary otb-btn-sm" to="/">
+                Home
+              </Link>
+            </div>
+          </div>
+        )}
+
         {view === "list" && (
           <>
             <div className="otb-eyebrow">Open the Boxes</div>
@@ -176,6 +210,9 @@ export default function OpenTheBoxes() {
                     <div className="otb-row">
                       <button className="otb-btn otb-btn-primary otb-btn-sm" onClick={() => startPlay(s.id)}>
                         Play
+                      </button>
+                      <button className="otb-btn otb-btn-ghost otb-btn-sm" onClick={() => copyShareLink(s.id)}>
+                        {copiedId === s.id ? "Copied!" : "Share"}
                       </button>
                       {confirmDeleteId === s.id ? (
                         <button className="otb-btn otb-btn-danger otb-btn-sm" onClick={() => deleteSet(s.id)}>
