@@ -465,6 +465,10 @@ export default function Whiteboard() {
   function handleBoxHeaderPointerDown(e, box) {
     e.stopPropagation();
     selectBox(box.id);
+    // don't capture the pointer for a drag when the press started on the
+    // delete button — pointer capture retargets the matching pointerup,
+    // which stops the browser from ever synthesizing a click on the button
+    if (e.target.closest(".wb-textbox-delete")) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     boxDragRef.current = {
       id: box.id,
