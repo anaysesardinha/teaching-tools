@@ -335,6 +335,15 @@
   word-break: break-word;
   cursor: text;
 }
+/* the browser's default selection highlight is opaque enough to fully hide
+   a just-applied text color underneath it — a teacher clicking a color
+   swatch would see the selection turn solid blue and have no way to tell
+   the color actually changed. A translucent highlight instead lets the
+   applied color show through immediately, selected or not. */
+.wb-textbox-editable::selection,
+.wb-textbox-editable ::selection {
+  background: rgba(37, 99, 235, 0.35);
+}
 .wb-textbox-editable:empty:before {
   content: attr(data-placeholder);
   color: rgba(128, 128, 128, 0.6);
