@@ -38,6 +38,23 @@ const FONT_SIZE_PRESETS = [
   { label: "Subtitle", value: 20 },
   { label: "Title", value: 28 },
 ];
+// mid-tone, moderately saturated hexes: dark enough to read on the light-mode
+// background and the always-light pastel note fills, light enough to still
+// read on the dark theme's near-black background. Yellow is pulled toward
+// gold/amber rather than pure lemon yellow, which has too little contrast
+// against light backgrounds to be legible either way.
+const TEXT_COLORS = [
+  { label: "Default", value: null },
+  { label: "Blue", value: "#2563EB" },
+  { label: "Red", value: "#DC2626" },
+  { label: "Green", value: "#2F9E44" },
+  { label: "Yellow", value: "#CA8A04" },
+  { label: "Pink", value: "#D6336C" },
+  { label: "Purple", value: "#7C3AED" },
+];
+// throwaway marker color, just used to locate the <font> wrapper execCommand
+// creates for the current selection so its color can be stripped back out
+const RESET_COLOR_SENTINEL = "#000001";
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -426,6 +443,29 @@ export default function Whiteboard() {
     document.execCommand("bold");
   }
 
+  function applyTextColorToSelection(color) {
+    document.execCommand("foreColor", false, color);
+  }
+
+  // there's no execCommand to "unset" a foreColor while leaving other
+  // formatting alone, so reuse the same legacy-command trick as font size:
+  // wrap the selection in a sentinel-colored <font>, then strip that color
+  // back off so the text falls back to inheriting the note's normal ink
+  function resetTextColorToSelection() {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const activeElement = document.activeElement;
+    document.execCommand("foreColor", false, RESET_COLOR_SENTINEL);
+    const scope =
+      activeElement && activeElement.classList && activeElement.classList.contains("wb-textbox-editable")
+        ? activeElement
+        : document;
+    scope.querySelectorAll(`font[color="${RESET_COLOR_SENTINEL}"]`).forEach((el) => el.removeAttribute("color"));
+    // same reason as applyFontSizeToSelection: keep React state in sync even if
+    // the browser doesn't emit an input event of its own for this command
+    if (activeElement) activeElement.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
   // unlike bold, a list is usually applied to an empty note the teacher is about
   // to type into, so the caret may not be inside the editable yet — put it there
   // (at the end of whatever is already written) before running the command,
@@ -782,6 +822,21 @@ export default function Whiteboard() {
                 >
                   •
                 </button>
+              </div>
+
+              <div className="wb-swatches">
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c.label}
+                    className={"wb-swatch" + (c.value === null ? " wb-swatch-none" : "")}
+                    style={c.value === null ? undefined : { background: c.value }}
+                    disabled={!selectedBoxId}
+                    onMouseDown={handleFormatMouseDown}
+                    onClick={() => (c.value === null ? resetTextColorToSelection() : applyTextColorToSelection(c.value))}
+                    aria-label={c.value === null ? "Reset text color" : `Set text color ${c.label}`}
+                    title={c.value === null ? "Reset text color" : `${c.label} text`}
+                  />
+                ))}
               </div>
 
               <div className="wb-swatches">
