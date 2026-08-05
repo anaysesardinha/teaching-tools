@@ -7,11 +7,13 @@ import SpinTheWheel from "./games/spinTheWheel/SpinTheWheel.jsx";
 import Whiteboard from "./games/whiteboard/Whiteboard.jsx";
 import BackgroundFX from "./components/BackgroundFX.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
+import PaletteToggle from "./components/PaletteToggle.jsx";
 
 export default function App() {
   return (
     <BrowserRouter>
       <BackgroundFX />
+      <PaletteToggle />
       <ThemeToggle />
       <Routes>
         <Route path="/" element={<Home />} />

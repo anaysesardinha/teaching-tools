@@ -17,6 +17,34 @@
   margin-bottom: 6px;
 }
 
+.home-topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-switch {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: none;
+  /* Transparent border + padding rather than none/0: without them the button
+     is a ~17px-tall strip of text, which is an awkward thing to hit. */
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  margin: -6px -12px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.home-switch:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .home-title {
   font-size: 26px;
   font-weight: 800;
@@ -50,6 +78,24 @@
   box-shadow: var(--glass-shadow), var(--accent-glow);
 }
 
+/* The teacher cards hold nothing but a name, so centre it rather than leaving
+   it hanging in the top-left like the tool cards, which have a description
+   under them. */
+.home-card-button {
+  font: inherit;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 88px;
+}
+
+.home-card-button .home-card-name {
+  margin-bottom: 0;
+}
+
 .home-card-disabled {
   opacity: 0.5;
   cursor: default;
@@ -60,6 +106,13 @@
   font-weight: 700;
   font-size: 16px;
   margin-bottom: 4px;
+}
+
+.home-card-newtab {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 
 .home-card-desc {

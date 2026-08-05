@@ -132,8 +132,11 @@
 
 .stw-wheel-area {
   position: relative;
-  width: 300px;
-  height: 300px;
+  /* Bigger than the old fixed 300px: this is read off a shared screen, and the
+     extra radius is what gives the labels room. */
+  /* 56vh keeps the whole wheel plus the Spin button on screen on a laptop. */
+  width: min(440px, 84vw, 56vh);
+  aspect-ratio: 1;
   margin: 16px auto 0;
 }
 .stw-pointer {
@@ -169,18 +172,31 @@
   transform-origin: 0% 0%;
   display: flex;
   align-items: center;
+  /* Sit the label against the rim rather than the hub — that's where the slice
+     is widest, so the text has the most room and looks least cramped. */
+  justify-content: flex-end;
   pointer-events: none;
 }
 .stw-label-text {
   display: inline-block;
-  padding-left: 14px;
-  max-width: 108px;
+  padding-right: 16px;
+  /* Keep the text in the outer part of the radius. Letting it run to the hub
+     makes neighbouring labels collide where the slices are narrowest — and
+     truncating is free here, since the drawn item is printed in full below. */
+  max-width: 62%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: white;
+}
+/* Rotating in place keeps the box hugging the rim; the padding swaps sides so
+   the gap stays on the rim side after the flip. */
+.stw-label-text-flipped {
+  transform: rotate(180deg);
+  padding-right: 0;
+  padding-left: 16px;
 }
 .stw-result-area {
   min-height: 48px;

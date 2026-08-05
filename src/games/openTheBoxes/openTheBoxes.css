@@ -130,21 +130,56 @@
 }
 .otb-flash-error { color: var(--error); }
 
+/* Board view only: pin the page to the viewport so the grid is measured against
+   real remaining space instead of growing past the fold. */
+.otb-root-board {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.otb-shell-board {
+  /* Wider than the 640px reading column — on a shared screen that extra width
+     is what keeps the boxes big. */
+  max-width: 1400px;
+  /* Explicit, because the inherited `margin: 0 auto` cancels a flex item's
+     default stretch and would shrink this to fit its content instead. */
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The board shell runs nearly the full width, which pushes its top bar under
+   the two fixed round buttons in the corner. Keep it clear of them. */
+.otb-shell-board .otb-topbar {
+  padding-right: 104px;
+}
+/* The measured area. Everything else in the board view has a fixed height, so
+   whatever is left over here is what the boxes get to share. */
+.otb-grid-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
 .otb-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 14px;
-  margin-bottom: 20px;
 }
 .otb-box {
   position: relative;
-  aspect-ratio: 1 / 1;
-  border-radius: 16px;
+  /* Size comes from the grid track, computed by fitGrid(); --otb-box-size
+     mirrors it so type and corners scale with the box. */
+  border-radius: clamp(6px, calc(var(--otb-box-size, 96px) * 0.15), 16px);
   border: 1px solid var(--surface-glass-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 34px;
+  font-size: clamp(13px, calc(var(--otb-box-size, 96px) * 0.36), 34px);
   font-weight: 800;
   color: white;
   cursor: pointer;
@@ -167,14 +202,16 @@
 }
 .otb-box-check {
   position: absolute;
-  top: 6px;
-  right: 8px;
-  font-size: 14px;
+  top: clamp(2px, calc(var(--otb-box-size, 96px) * 0.06), 6px);
+  right: clamp(3px, calc(var(--otb-box-size, 96px) * 0.08), 8px);
+  font-size: clamp(8px, calc(var(--otb-box-size, 96px) * 0.15), 14px);
   font-weight: 800;
   color: var(--accent);
 }
 .otb-reset-btn {
   display: inline-block;
+  align-self: flex-start;
+  flex: none;
 }
 
 .otb-question-card {

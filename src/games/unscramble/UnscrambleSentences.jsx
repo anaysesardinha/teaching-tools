@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
-import { getJSON, setJSON, removeItem } from "../../lib/storage.js";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { setJSON, removeItem } from "../../lib/storage.js";
+import { loadOwnSets, findSharedSet } from "../../lib/sets.js";
+import { getActiveTeacherId, teacherKey, teacherName } from "../../lib/teacher.js";
 import "./unscramble.css";
 
 const STORAGE_KEY = "unscramble-sets";
@@ -30,12 +32,18 @@ function shuffledIndices(n) {
 
 export default function UnscrambleSentences() {
   const { setId: sharedSetId } = useParams();
+  // Read once at mount, not per write: with two tabs open, switching
+  // teacher in one must not redirect where the other one saves.
+  const [teacherId] = useState(getActiveTeacherId);
   const [view, setView] = useState("loading"); // loading | list | form | play | notfound | error
   const [sets, setSets] = useState([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmResetAll, setConfirmResetAll] = useState(false);
   const [activeSetId, setActiveSetId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  // A shared set can belong to the other teacher or to the lesson library, so
+  // it won't be in `sets` — keep it aside instead of forcing it into the list.
+  const [sharedSet, setSharedSet] = useState(null);
 
   // form state
   const [formName, setFormName] = useState("");
@@ -52,27 +60,28 @@ export default function UnscrambleSentences() {
   const [persistError, setPersistError] = useState(false);
 
   const loadSets = useCallback(async () => {
+    // Without a teacher there is no space to read; Home takes over below.
+    if (!sharedSetId && !teacherId) return;
     setView("loading");
     try {
-      const parsed = await getJSON(STORAGE_KEY, []);
-      const list = Array.isArray(parsed) ? parsed : [];
-      setSets(list);
       if (sharedSetId) {
-        const shared = list.find((s) => s.id === sharedSetId);
-        if (shared) {
-          setActiveSetId(shared.id);
-          setCurrentIndex(0);
-          setView("play");
-        } else {
+        const shared = await findSharedSet(STORAGE_KEY, sharedSetId, teacherId);
+        if (!shared) {
           setView("notfound");
+          return;
         }
-      } else {
-        setView("list");
+        setSharedSet(shared);
+        setActiveSetId(shared.id);
+        setCurrentIndex(0);
+        setView("play");
+        return;
       }
+      setSets(await loadOwnSets(STORAGE_KEY, teacherId));
+      setView("list");
     } catch (e) {
       setView("error");
     }
-  }, [sharedSetId]);
+  }, [sharedSetId, teacherId]);
 
   useEffect(() => {
     loadSets();
@@ -80,11 +89,12 @@ export default function UnscrambleSentences() {
 
   const persistSets = useCallback((nextSets) => {
     setSets(nextSets);
-    setJSON(STORAGE_KEY, nextSets).catch(() => {
+    setJSON(teacherKey(STORAGE_KEY, teacherId), nextSets).catch(() => {
       setPersistError(true);
       setTimeout(() => setPersistError(false), 2500);
     });
-  }, []);
+  }, [teacherId]);
+
 
   function openNewSetForm() {
     setFormName("");
@@ -136,7 +146,7 @@ export default function UnscrambleSentences() {
   function resetAllData() {
     setSets([]);
     setConfirmResetAll(false);
-    removeItem(STORAGE_KEY).catch(() => {
+    removeItem(teacherKey(STORAGE_KEY, teacherId)).catch(() => {
       setPersistError(true);
       setTimeout(() => setPersistError(false), 2500);
     });
@@ -156,7 +166,10 @@ export default function UnscrambleSentences() {
     setView("play");
   }
 
-  const activeSet = sets.find((s) => s.id === activeSetId);
+  const activeSet =
+    sharedSet && sharedSet.id === activeSetId
+      ? sharedSet
+      : sets.find((s) => s.id === activeSetId);
 
   // reset puzzle whenever current sentence changes
   useEffect(() => {
@@ -210,6 +223,8 @@ export default function UnscrambleSentences() {
     setCurrentIndex((i) => Math.min(activeSet.sentences.length - 1, i + 1));
   }
 
+  if (!sharedSetId && !teacherId) return <Navigate to="/" replace />;
+
   return (
     <div className="uw-root">
       <div className="uw-shell">
@@ -241,12 +256,16 @@ export default function UnscrambleSentences() {
 
         {view === "list" && (
           <>
-            <div className="uw-eyebrow">Unscramble Sentences</div>
+            <div className="uw-eyebrow">
+              Unscramble Sentences · {teacherName(teacherId)}
+            </div>
             <div className="uw-topbar">
               <h1 className="uw-title" style={{ marginBottom: 0 }}>Sentence sets</h1>
               {saveFlash && <span className="uw-flash">Set saved!</span>}
               {persistError && <span className="uw-flash uw-flash-error">Couldn't save — check connection</span>}
             </div>
+
+
 
             {sets.length === 0 ? (
               <div className="uw-card uw-empty" style={{ marginBottom: 20 }}>
@@ -257,7 +276,9 @@ export default function UnscrambleSentences() {
                 {sets.map((s) => (
                   <div className="uw-list-item" key={s.id}>
                     <div>
-                      <div className="uw-list-item-name">{s.name}</div>
+                      <div className="uw-list-item-name">
+                        {s.name}
+                      </div>
                       <div className="uw-list-item-meta">{s.sentences.length} sentence(s)</div>
                     </div>
                     <div className="uw-row">

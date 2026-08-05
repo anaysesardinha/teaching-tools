@@ -25,12 +25,12 @@ function promptForPassphrase() {
 const READ_METHODS = new Set(["GET"]);
 
 async function request(method, key, body) {
-  const isRead = READ_METHODS.has(method);
-  // Reads are public (e.g. a student opening a shared play link) — only
-  // attach/prompt for a passphrase when one is already known. Writes always
-  // require it.
+  // Send whatever passphrase we already have and let the server decide. Asking
+  // up front was redundant — the 401 branch below already prompts and retries —
+  // and it meant every first write popped a blocking window.prompt even against
+  // a backend that doesn't require one (e.g. the local dev stub in
+  // vite.config.js). Reads are public anyway, except whiteboard keys.
   let passphrase = getStoredPassphrase();
-  if (!passphrase && !isRead) passphrase = promptForPassphrase();
 
   const attempt = (pass) =>
     fetch(`/api/data?key=${encodeURIComponent(key)}`, {

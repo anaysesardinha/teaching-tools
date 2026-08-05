@@ -1,16 +1,34 @@
 import { useEffect, useState, useCallback } from "react";
-import { getJSON, setJSON } from "./storage.js";
 
+// The theme is a per-device UI preference, not shared content, so it lives in
+// localStorage rather than the cloud store — that also keeps it synchronous,
+// which is what resolveInitialTheme() needs.
 const STORAGE_KEY = "theme-preference";
 const MEDIA_QUERY = "(prefers-color-scheme: dark)";
+
+function storedTheme() {
+  try {
+    const value = window.localStorage.getItem(STORAGE_KEY);
+    return value === "dark" || value === "light" ? value : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function storeTheme(theme) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, theme);
+  } catch (e) {
+    // silent fail: the theme just won't be remembered for next time
+  }
+}
 
 function systemTheme() {
   return window.matchMedia(MEDIA_QUERY).matches ? "dark" : "light";
 }
 
 function resolveInitialTheme() {
-  const stored = getJSON(STORAGE_KEY, null);
-  return stored === "dark" || stored === "light" ? stored : systemTheme();
+  return storedTheme() || systemTheme();
 }
 
 function applyTheme(theme) {
@@ -27,7 +45,7 @@ export function useTheme() {
   useEffect(() => {
     const mql = window.matchMedia(MEDIA_QUERY);
     const onChange = () => {
-      if (getJSON(STORAGE_KEY, null) === null) {
+      if (storedTheme() === null) {
         setTheme(systemTheme());
       }
     };
@@ -38,7 +56,7 @@ export function useTheme() {
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
-      setJSON(STORAGE_KEY, next);
+      storeTheme(next);
       return next;
     });
   }, []);

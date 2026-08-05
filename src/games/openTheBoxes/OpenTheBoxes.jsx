@@ -1,9 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
-import { getJSON, setJSON, removeItem } from "../../lib/storage.js";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { setJSON, removeItem } from "../../lib/storage.js";
+import { loadOwnSets, findSharedSet } from "../../lib/sets.js";
+import { getActiveTeacherId, teacherKey, teacherName } from "../../lib/teacher.js";
 import "./openTheBoxes.css";
 
 const STORAGE_KEY = "open-the-boxes-sets";
+
+const GRID_GAP = 14;
+// Past this the boxes stop looking generous and start looking silly — a
+// three-question set shouldn't fill the screen with three huge tiles.
+const MAX_BOX_SIZE = 150;
+
+// Every box has to be visible at once: this gets screen-shared during a call,
+// and scrolling to find box 37 kills the moment. So rather than a fixed column
+// count, try every column count and keep the one that makes the square boxes
+// biggest while still fitting inside the measured area.
+function fitGrid(count, width, height) {
+  if (!count || width <= 0 || height <= 0) return null;
+  let best = { columns: 1, size: 0 };
+  for (let columns = 1; columns <= count; columns++) {
+    const rows = Math.ceil(count / columns);
+    const size = Math.min(
+      (width - GRID_GAP * (columns - 1)) / columns,
+      (height - GRID_GAP * (rows - 1)) / rows
+    );
+    if (size > best.size) best = { columns, size };
+  }
+  return { columns: best.columns, size: Math.min(best.size, MAX_BOX_SIZE) };
+}
 
 function parseQuestions(text) {
   return text
@@ -14,12 +39,18 @@ function parseQuestions(text) {
 
 export default function OpenTheBoxes() {
   const { setId: sharedSetId } = useParams();
+  // Read once at mount, not per write: with two tabs open, switching
+  // teacher in one must not redirect where the other one saves.
+  const [teacherId] = useState(getActiveTeacherId);
   const [view, setView] = useState("loading"); // loading | list | form | play | notfound | error
   const [sets, setSets] = useState([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmResetAll, setConfirmResetAll] = useState(false);
   const [activeSetId, setActiveSetId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  // A shared set can belong to the other teacher, so it won't be in `sets` —
+  // keep it aside instead of forcing it into the list.
+  const [sharedSet, setSharedSet] = useState(null);
 
   // form state
   const [formName, setFormName] = useState("");
@@ -32,42 +63,59 @@ export default function OpenTheBoxes() {
   const [openedFlags, setOpenedFlags] = useState([]);
   const [saveFlash, setSaveFlash] = useState(false);
   const [persistError, setPersistError] = useState(false);
+  const gridAreaRef = useRef(null);
+  const [gridArea, setGridArea] = useState({ width: 0, height: 0 });
 
   const loadSets = useCallback(async () => {
+    // Without a teacher there is no space to read; Home takes over below.
+    if (!sharedSetId && !teacherId) return;
     setView("loading");
     try {
-      const parsed = await getJSON(STORAGE_KEY, []);
-      const list = Array.isArray(parsed) ? parsed : [];
-      setSets(list);
       if (sharedSetId) {
-        const shared = list.find((s) => s.id === sharedSetId);
-        if (shared) {
-          setActiveSetId(shared.id);
-          setOpenedFlags(Array(shared.questions.length).fill(false));
-          setOpenedBoxIndex(null);
-          setView("play");
-        } else {
+        const shared = await findSharedSet(STORAGE_KEY, sharedSetId, teacherId);
+        if (!shared) {
           setView("notfound");
+          return;
         }
-      } else {
-        setView("list");
+        setSharedSet(shared);
+        setActiveSetId(shared.id);
+        setOpenedFlags(Array(shared.questions.length).fill(false));
+        setOpenedBoxIndex(null);
+        setView("play");
+        return;
       }
+      setSets(await loadOwnSets(STORAGE_KEY, teacherId));
+      setView("list");
     } catch (e) {
       setView("error");
     }
-  }, [sharedSetId]);
+  }, [sharedSetId, teacherId]);
 
   useEffect(() => {
     loadSets();
   }, [loadSets]);
 
+  // Re-fit whenever the space changes: window resize, the browser chrome
+  // appearing during a screen share, or a second monitor with a different size.
+  useEffect(() => {
+    const el = gridAreaRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setGridArea({ width, height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [view, openedBoxIndex]);
+
   const persistSets = useCallback((nextSets) => {
     setSets(nextSets);
-    setJSON(STORAGE_KEY, nextSets).catch(() => {
+    setJSON(teacherKey(STORAGE_KEY, teacherId), nextSets).catch(() => {
       setPersistError(true);
       setTimeout(() => setPersistError(false), 2500);
     });
-  }, []);
+  }, [teacherId]);
+
 
   function openNewSetForm() {
     setFormName("");
@@ -119,7 +167,7 @@ export default function OpenTheBoxes() {
   function resetAllData() {
     setSets([]);
     setConfirmResetAll(false);
-    removeItem(STORAGE_KEY).catch(() => {
+    removeItem(teacherKey(STORAGE_KEY, teacherId)).catch(() => {
       setPersistError(true);
       setTimeout(() => setPersistError(false), 2500);
     });
@@ -155,11 +203,24 @@ export default function OpenTheBoxes() {
     setOpenedBoxIndex(index);
   }
 
-  const activeSet = sets.find((s) => s.id === activeSetId);
+  const activeSet =
+    sharedSet && sharedSet.id === activeSetId
+      ? sharedSet
+      : sets.find((s) => s.id === activeSetId);
+
+  // The board is the only view that has to fill the viewport exactly; the set
+  // list and the revealed question keep the normal centred column.
+  const isBoard = view === "play" && !!activeSet && openedBoxIndex === null;
+  const grid = useMemo(
+    () => fitGrid(activeSet ? activeSet.questions.length : 0, gridArea.width, gridArea.height),
+    [activeSet, gridArea]
+  );
+
+  if (!sharedSetId && !teacherId) return <Navigate to="/" replace />;
 
   return (
-    <div className="otb-root">
-      <div className="otb-shell">
+    <div className={"otb-root" + (isBoard ? " otb-root-board" : "")}>
+      <div className={"otb-shell" + (isBoard ? " otb-shell-board" : "")}>
         {view === "loading" && (
           <div className="otb-empty">Loading saved sets...</div>
         )}
@@ -188,12 +249,16 @@ export default function OpenTheBoxes() {
 
         {view === "list" && (
           <>
-            <div className="otb-eyebrow">Open the Boxes</div>
+            <div className="otb-eyebrow">
+              Open the Boxes · {teacherName(teacherId)}
+            </div>
             <div className="otb-topbar">
               <h1 className="otb-title" style={{ marginBottom: 0 }}>Question sets</h1>
               {saveFlash && <span className="otb-flash">Set saved!</span>}
               {persistError && <span className="otb-flash otb-flash-error">Couldn't save — check connection</span>}
             </div>
+
+
 
             {sets.length === 0 ? (
               <div className="otb-card otb-empty" style={{ marginBottom: 20 }}>
@@ -204,7 +269,9 @@ export default function OpenTheBoxes() {
                 {sets.map((s) => (
                   <div className="otb-list-item" key={s.id}>
                     <div>
-                      <div className="otb-list-item-name">{s.name}</div>
+                      <div className="otb-list-item-name">
+                        {s.name}
+                      </div>
                       <div className="otb-list-item-meta">{s.questions.length} question(s)</div>
                     </div>
                     <div className="otb-row">
@@ -319,17 +386,32 @@ export default function OpenTheBoxes() {
 
             {openedBoxIndex === null ? (
               <>
-                <div className="otb-grid">
-                  {activeSet.questions.map((_, index) => (
-                    <div
-                      key={index}
-                      className={"otb-box" + (openedFlags[index] ? " otb-box-opened" : "")}
-                      onClick={() => openBox(index)}
-                    >
-                      {openedFlags[index] && <span className="otb-box-check">✓</span>}
-                      {index + 1}
-                    </div>
-                  ))}
+                <div className="otb-grid-area" ref={gridAreaRef}>
+                  <div
+                    className="otb-grid"
+                    style={
+                      grid
+                        ? {
+                            gridTemplateColumns: `repeat(${grid.columns}, ${grid.size}px)`,
+                            gridAutoRows: `${grid.size}px`,
+                            "--otb-box-size": `${grid.size}px`,
+                          }
+                        : // Hidden, not unmounted: the area still needs to be
+                          // measurable before the first fit is known.
+                          { visibility: "hidden" }
+                    }
+                  >
+                    {activeSet.questions.map((_, index) => (
+                      <div
+                        key={index}
+                        className={"otb-box" + (openedFlags[index] ? " otb-box-opened" : "")}
+                        onClick={() => openBox(index)}
+                      >
+                        {openedFlags[index] && <span className="otb-box-check">✓</span>}
+                        {index + 1}
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <button className="otb-btn otb-btn-ghost otb-reset-btn" onClick={resetBoxes}>
                   Reset boxes

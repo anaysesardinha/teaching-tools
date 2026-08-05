@@ -59,3 +59,84 @@
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   --bgfx-opacity: 0.35;
 }
+
+/* ---------------------------------------------------------------------------
+   Violet palette.
+
+   Not invented: the colours are lifted from the teacher's own worksheets, so
+   the app and the lesson handouts read as the same person's work. The plum ink
+   (#3A2B4A), mauve secondary text, lavender rules and violet accent are theirs
+   verbatim; the pink is the answer-key magenta (#A52670 on light, #F472B6 on
+   dark, both from the worksheets' blue→violet→pink header bar).
+
+   Violet carries the interface — borders, headings, focus. Pink is reserved for
+   the moment something lands: a word dropped in the right slot, the wheel
+   stopping, a set saved. That split is why --accent-strong goes pink rather
+   than being a darker violet, and it's what makes primary buttons run
+   violet→pink, echoing the worksheet header.
+
+   Specificity note: these blocks must restate every token, because
+   [data-palette] alone ties with [data-theme="dark"] and would otherwise win on
+   source order.
+--------------------------------------------------------------------------- */
+:root[data-palette="violet"] {
+  color-scheme: light;
+
+  --bg: #F4F0FA;
+  --surface: #FCFAFE;
+  --ink: #3A2B4A;
+  --ink-soft: #6B5D85;
+  --border: #E6DBF2;
+  --neutral-block: #5B4A75;
+
+  --accent: #7C3AED;
+  --accent-soft: #F3ECFB;
+  --accent-strong: #A52670;
+  --accent-glow: 0 0 24px rgba(124, 58, 237, 0.3);
+
+  --error: #DC2626;
+  --error-soft: #FEE2E2;
+  --error-glow: 0 0 20px rgba(220, 38, 38, 0.3);
+
+  --bg-gradient-1: #C9B6F2;
+  --bg-gradient-2: #BFD2F0;
+  --bg-gradient-3: #F7C6E0;
+
+  --surface-glass: rgba(252, 250, 254, 0.55);
+  --surface-glass-strong: rgba(252, 250, 254, 0.78);
+  --surface-glass-border: rgba(255, 255, 255, 0.7);
+  --glass-blur: 18px;
+  --glass-shadow: 0 8px 32px rgba(58, 43, 74, 0.12);
+  --bgfx-opacity: 0.55;
+}
+
+:root[data-palette="violet"][data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #16111F;
+  --surface: #221A2E;
+  --ink: #F6F3FA;
+  --ink-soft: #BDB2CE;
+  --border: #443859;
+  --neutral-block: #322842;
+
+  --accent: #A78BFA;
+  --accent-soft: rgba(167, 139, 250, 0.18);
+  --accent-strong: #F472B6;
+  --accent-glow: 0 0 28px rgba(167, 139, 250, 0.45);
+
+  --error: #F87171;
+  --error-soft: rgba(248, 113, 113, 0.16);
+  --error-glow: 0 0 24px rgba(248, 113, 113, 0.4);
+
+  --bg-gradient-1: #3E2158;
+  --bg-gradient-2: #23305C;
+  --bg-gradient-3: #5A2148;
+
+  --surface-glass: rgba(30, 23, 41, 0.86);
+  --surface-glass-strong: rgba(30, 23, 41, 0.95);
+  --surface-glass-border: rgba(255, 255, 255, 0.16);
+  --glass-blur: 18px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --bgfx-opacity: 0.35;
+}

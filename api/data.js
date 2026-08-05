@@ -1,23 +1,28 @@
 import Redis from "ioredis";
 
-const EXACT_ALLOWED_KEYS = new Set([
+const BASE_KEYS = [
   "unscramble-sets",
   "open-the-boxes-sets",
   "spin-the-wheel-sets",
   "whiteboard-students",
-]);
+];
+// Each teacher gets their own copy of every base key, suffixed with their id.
+// The un-suffixed keys stay allowed: they hold the sets saved before teacher
+// spaces existed, which older share links still point at and which the app
+// offers as a one-time import.
+const TEACHER_KEY_RE = new RegExp(`^(${BASE_KEYS.join("|")})--[a-z0-9_-]{1,32}$`);
 // Whiteboard boards are one Redis key per student, so the id is dynamic —
 // this regex bounds the character set/length instead of an exact-match list.
 const WHITEBOARD_BOARD_KEY_RE = /^whiteboard-board-[A-Za-z0-9_-]{1,64}$/;
 
 function isAllowedKey(key) {
-  return EXACT_ALLOWED_KEYS.has(key) || WHITEBOARD_BOARD_KEY_RE.test(key);
+  return BASE_KEYS.includes(key) || TEACHER_KEY_RE.test(key) || WHITEBOARD_BOARD_KEY_RE.test(key);
 }
 
 // Whiteboard data can hold private notes about a student, unlike the other
 // games' keys (which are meant to be readable via a public shared play link).
 function isWhiteboardKey(key) {
-  return key === "whiteboard-students" || WHITEBOARD_BOARD_KEY_RE.test(key);
+  return key.startsWith("whiteboard-students") || WHITEBOARD_BOARD_KEY_RE.test(key);
 }
 
 let redisClient = null;
