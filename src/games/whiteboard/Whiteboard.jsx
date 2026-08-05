@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { getJSON, setJSON, removeItem } from "../../lib/storage.js";
+import { getActiveTeacherId, teacherKey, teacherName } from "../../lib/teacher.js";
 import "./whiteboard.css";
 
+// Each teacher keeps their own roster. Board keys stay un-namespaced: student
+// ids are already unique, and the namespaced roster is what separates them.
 const STUDENTS_KEY = "whiteboard-students";
 const boardKey = (studentId) => `whiteboard-board-${studentId}`;
 
@@ -98,6 +101,13 @@ function WhiteboardTextBox({
       document.execCommand("bold");
       handleInput(e);
     }
+    // Google Docs' own list shortcuts. Match on e.code, not e.key: on an ABNT2
+    // (or any non-US) layout Shift+7 doesn't necessarily produce "&".
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === "Digit7" || e.code === "Digit8")) {
+      e.preventDefault();
+      document.execCommand(e.code === "Digit7" ? "insertOrderedList" : "insertUnorderedList");
+      handleInput(e);
+    }
   }
 
   function handlePaste(e) {
@@ -141,6 +151,7 @@ function WhiteboardTextBox({
       </div>
       <div
         className="wb-textbox-editable"
+        data-box-id={box.id}
         contentEditable
         suppressContentEditableWarning
         data-placeholder="Type here..."
@@ -166,6 +177,10 @@ function WhiteboardTextBox({
 
 export default function Whiteboard() {
   const { studentId: sharedStudentId } = useParams();
+  // Read once at mount, not per write: the whiteboard is meant to sit in its
+  // own tab, and switching teacher in the other one must not redirect where
+  // this roster saves.
+  const [teacherId] = useState(getActiveTeacherId);
   const [view, setView] = useState("loading"); // loading | roster | board | notfound | error
   const [students, setStudents] = useState([]);
   const [newStudentName, setNewStudentName] = useState("");
@@ -228,9 +243,11 @@ export default function Whiteboard() {
   );
 
   const loadStudents = useCallback(async () => {
+    // Without a teacher there is no roster to read; Home takes over below.
+    if (!teacherId) return;
     setView("loading");
     try {
-      const parsed = await getJSON(STUDENTS_KEY, []);
+      const parsed = await getJSON(teacherKey(STUDENTS_KEY, teacherId), []);
       const list = Array.isArray(parsed) ? parsed : [];
       setStudents(list);
       if (sharedStudentId) {
@@ -247,7 +264,7 @@ export default function Whiteboard() {
       setView("error");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sharedStudentId]);
+  }, [sharedStudentId, teacherId]);
 
   useEffect(() => {
     loadStudents();
@@ -298,11 +315,11 @@ export default function Whiteboard() {
 
   const persistStudents = useCallback((next) => {
     setStudents(next);
-    setJSON(STUDENTS_KEY, next).catch(() => {
+    setJSON(teacherKey(STUDENTS_KEY, teacherId), next).catch(() => {
       setPersistError(true);
       setTimeout(() => setPersistError(false), 2500);
     });
-  }, []);
+  }, [teacherId]);
 
   function addStudent() {
     const name = newStudentName.trim();
@@ -358,7 +375,9 @@ export default function Whiteboard() {
       width: DEFAULT_BOX_WIDTH,
       height: DEFAULT_BOX_HEIGHT,
       html: "",
-      color: SWATCHES[1],
+      // No fill by default: most notes are just text on the board, and a
+      // coloured card is the deliberate choice, not the starting point.
+      color: TRANSPARENT_COLOR,
       zIndex: nextZIndexRef.current,
     };
     justCreatedIdRef.current = id;
@@ -405,6 +424,29 @@ export default function Whiteboard() {
 
   function applyBoldToSelection() {
     document.execCommand("bold");
+  }
+
+  // unlike bold, a list is usually applied to an empty note the teacher is about
+  // to type into, so the caret may not be inside the editable yet — put it there
+  // (at the end of whatever is already written) before running the command,
+  // otherwise the button would silently do nothing
+  function applyListToSelection(kind) {
+    if (!selectedBoxId) return;
+    const editable = document.querySelector(`.wb-textbox-editable[data-box-id="${selectedBoxId}"]`);
+    if (!editable) return;
+    if (document.activeElement !== editable) {
+      editable.focus();
+      const range = document.createRange();
+      range.selectNodeContents(editable);
+      range.collapse(false);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    document.execCommand(kind === "ordered" ? "insertOrderedList" : "insertUnorderedList");
+    // same reason as applyFontSizeToSelection: keep React state in sync even if
+    // the browser doesn't emit an input event of its own for this command
+    editable.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   // there's no execCommand for an arbitrary px font size, so this reuses the
@@ -562,6 +604,8 @@ export default function Whiteboard() {
     setConfirmClearBoard(false);
   }
 
+  if (!teacherId) return <Navigate to="/" replace />;
+
   return (
     <div className={view === "board" ? "wb-board-page" : "wb-root"}>
       {view === "loading" && (
@@ -598,7 +642,9 @@ export default function Whiteboard() {
 
       {view === "roster" && (
         <div className="wb-shell">
-          <div className="wb-eyebrow">Whiteboard</div>
+          <div className="wb-eyebrow">
+            Whiteboard · {teacherName(teacherId)}
+          </div>
           <div className="wb-topbar">
             <h1 className="wb-title" style={{ marginBottom: 0 }}>Students</h1>
             {persistError && <span className="wb-flash wb-flash-error">Couldn't save — check connection</span>}
@@ -717,6 +763,24 @@ export default function Whiteboard() {
                   title="Bold the selected text (Ctrl+B)"
                 >
                   B
+                </button>
+                <button
+                  className="wb-btn wb-btn-ghost wb-btn-sm"
+                  disabled={!selectedBoxId}
+                  onMouseDown={handleFormatMouseDown}
+                  onClick={() => applyListToSelection("ordered")}
+                  title="Numbered list (Ctrl+Shift+7)"
+                >
+                  1.
+                </button>
+                <button
+                  className="wb-btn wb-btn-ghost wb-btn-sm"
+                  disabled={!selectedBoxId}
+                  onMouseDown={handleFormatMouseDown}
+                  onClick={() => applyListToSelection("unordered")}
+                  title="Bulleted list (Ctrl+Shift+8)"
+                >
+                  •
                 </button>
               </div>
 

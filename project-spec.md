@@ -114,6 +114,7 @@ Placeholder for a future spec session. Suggested next step: define it the same w
 - Pan by dragging empty space, zoom with the scroll wheel (centered on the cursor), "Reset view" recenters
 - Each text box can be moved (drag its header), resized (drag its corner handle, and it also grows automatically as typed content no longer fits), recolored with a muted/dusty palette (or set to "no fill" for free-floating plain text with no card chrome), or deleted
 - Bold and text size (Text/Subtitle/Title) both apply to just the selected text within a note (select a word/phrase, then Ctrl+B or a toolbar button), not the whole note — like a normal text editor
+- Numbered and bulleted lists (toolbar "1." / "•", or Ctrl+Shift+7 / Ctrl+Shift+8): applied to the selected lines, or started on the spot in an empty note; Enter continues the list, Enter on an empty item leaves it
 - "Clear board" empties a student's board but keeps them in the roster; "Delete student" removes the roster entry and its board entirely
 - A board is a large but finite area (not infinite), matching the "doesn't need to be infinite" requirement
 - No scoring, no timer
