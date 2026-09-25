@@ -4,6 +4,7 @@ const BASE_KEYS = [
   "unscramble-sets",
   "open-the-boxes-sets",
   "spin-the-wheel-sets",
+  "fill-in-the-blanks-sets",
   "whiteboard-students",
 ];
 // Each teacher gets their own copy of every base key, suffixed with their id.

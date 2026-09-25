@@ -10,7 +10,7 @@ A small collection of interactive games for a teacher to run during class. Built
 1. Unscramble Sentences — spec finalized, built
 2. Spin the Wheel — spec finalized, built
 3. Open the Boxes — spec finalized, built
-4. Fill in the Blanks — not yet specified
+4. Fill in the Blanks — spec finalized (v1), built
 
 All UI text, labels, and copy must be in English.
 
@@ -97,9 +97,26 @@ Derived from the prototype, meant to be shared across all four games for visual 
 - A "Reset boxes" button clears every box back to unopened, without needing to recreate the set
 - No scoring, no timer
 
-## Game 4: not yet defined
+## Game 4: Fill in the Blanks (finalized spec, v1)
 
-Placeholder for a future spec session. Suggested next step: define it the same way the other three games were defined (usage context confirmed, one MVP decision at a time, prototype before building for real).
+**Content setup**
+- Teacher creates a named set (e.g. "Past Simple - Grade 7")
+- Candidate sentences typed directly into a textarea, one per line, with the correct word marked inline in brackets (e.g. `She [went] to school yesterday.`)
+- Or imported from a `.txt` file (same bracket format), appended into the same textarea
+- A line with no `[bracketed]` word is flagged as invalid and can't be included
+- As the teacher types, a live checklist appears below the textarea listing every valid sentence (pre-checked) with its blank preview and its answer, so specific sentences can be deselected before saving — only checked sentences become part of the saved set
+- Sets are saved and reusable across different classes/sessions
+
+**Gameplay**
+- Every sentence in the set is shown at once, each with one blank, alongside a word bank listing every sentence's answer word in shuffled order
+- The teacher (there's no student device) drags a word from the bank onto the blank it belongs to, or clicks a bank word then clicks a blank as a non-drag fallback
+- Clicking a filled blank returns that word to the bank
+- Live feedback: a filled blank turns green if its word matches that sentence's answer, light red if it doesn't — no separate "Check" step
+- A confirmation banner appears once every blank is filled correctly
+- A "Reset" button clears every blank back to the word bank, without needing to recreate the set
+- No scoring, no timer
+
+v1 keeps one blank per sentence. Deferred ideas are listed under "Open questions for later" below.
 
 ## Whiteboard (finalized spec)
 
@@ -124,3 +141,6 @@ Placeholder for a future spec session. Suggested next step: define it the same w
 - Should sets eventually be shareable/exportable between the teacher's devices, or is per-device storage enough?
 - Should there be a single unified "home" screen listing all four games, or four separate mini-apps?
 - Any need for a simple "reset all data" option for the teacher?
+- Fill in the Blanks: support more than one blank per sentence?
+- Fill in the Blanks: FCE-style word transformation (answer isn't the literal word shown, e.g. change tense/form)?
+- Fill in the Blanks: a reusable sentence pool shared across multiple sets, instead of each set owning its own list?
