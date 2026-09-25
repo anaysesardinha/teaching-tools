@@ -4,6 +4,7 @@ import {
   UNSCRAMBLE_SETS_KEY,
   OPEN_THE_BOXES_SETS_KEY,
   SPIN_THE_WHEEL_SETS_KEY,
+  FILL_IN_THE_BLANKS_SETS_KEY,
   WHITEBOARD_STUDENTS_KEY,
   whiteboardBoardKey,
 } from "./storageKeys.js";
@@ -47,10 +48,11 @@ export function shouldRemindBackup(teacherId) {
 }
 
 export async function exportTeacherData(teacherId) {
-  const [unscramble, openTheBoxes, spinTheWheel, students] = await Promise.all([
+  const [unscramble, openTheBoxes, spinTheWheel, fillInTheBlanks, students] = await Promise.all([
     getJSON(teacherKey(UNSCRAMBLE_SETS_KEY, teacherId), []),
     getJSON(teacherKey(OPEN_THE_BOXES_SETS_KEY, teacherId), []),
     getJSON(teacherKey(SPIN_THE_WHEEL_SETS_KEY, teacherId), []),
+    getJSON(teacherKey(FILL_IN_THE_BLANKS_SETS_KEY, teacherId), []),
     getJSON(teacherKey(WHITEBOARD_STUDENTS_KEY, teacherId), []),
   ]);
 
@@ -69,6 +71,7 @@ export async function exportTeacherData(teacherId) {
       [UNSCRAMBLE_SETS_KEY]: unscramble,
       [OPEN_THE_BOXES_SETS_KEY]: openTheBoxes,
       [SPIN_THE_WHEEL_SETS_KEY]: spinTheWheel,
+      [FILL_IN_THE_BLANKS_SETS_KEY]: fillInTheBlanks,
       [WHITEBOARD_STUDENTS_KEY]: students,
       [WHITEBOARD_BOARDS_KEY]: Object.fromEntries(boardEntries.filter(([, board]) => board)),
     },
@@ -102,6 +105,7 @@ export async function importTeacherData(teacherId, file) {
     setJSON(teacherKey(UNSCRAMBLE_SETS_KEY, teacherId), asArray(data[UNSCRAMBLE_SETS_KEY])),
     setJSON(teacherKey(OPEN_THE_BOXES_SETS_KEY, teacherId), asArray(data[OPEN_THE_BOXES_SETS_KEY])),
     setJSON(teacherKey(SPIN_THE_WHEEL_SETS_KEY, teacherId), asArray(data[SPIN_THE_WHEEL_SETS_KEY])),
+    setJSON(teacherKey(FILL_IN_THE_BLANKS_SETS_KEY, teacherId), asArray(data[FILL_IN_THE_BLANKS_SETS_KEY])),
     setJSON(teacherKey(WHITEBOARD_STUDENTS_KEY, teacherId), asArray(data[WHITEBOARD_STUDENTS_KEY])),
   ]);
 

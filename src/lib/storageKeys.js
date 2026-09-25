@@ -7,6 +7,7 @@
 export const UNSCRAMBLE_SETS_KEY = "unscramble-sets";
 export const OPEN_THE_BOXES_SETS_KEY = "open-the-boxes-sets";
 export const SPIN_THE_WHEEL_SETS_KEY = "spin-the-wheel-sets";
+export const FILL_IN_THE_BLANKS_SETS_KEY = "fill-in-the-blanks-sets";
 export const WHITEBOARD_STUDENTS_KEY = "whiteboard-students";
 
 // Whiteboard boards are one key per student, not teacher-suffixed: the

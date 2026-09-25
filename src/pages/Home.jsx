@@ -50,8 +50,9 @@ const GAMES = [
   {
     id: "fill-in-the-blanks",
     name: "Fill in the Blanks",
-    description: "Coming soon.",
-    enabled: false,
+    description: "Drag the right word from the bank into each sentence's blank.",
+    path: "/fill-in-the-blanks",
+    enabled: true,
   },
 ];
 
