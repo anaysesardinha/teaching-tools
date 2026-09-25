@@ -3,9 +3,8 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { setJSON, removeItem } from "../../lib/storage.js";
 import { loadOwnSets, findSharedSet } from "../../lib/sets.js";
 import { getActiveTeacherId, teacherKey, teacherName } from "../../lib/teacher.js";
+import { OPEN_THE_BOXES_SETS_KEY as STORAGE_KEY } from "../../lib/storageKeys.js";
 import "./openTheBoxes.css";
-
-const STORAGE_KEY = "open-the-boxes-sets";
 
 const GRID_GAP = 14;
 // Past this the boxes stop looking generous and start looking silly — a

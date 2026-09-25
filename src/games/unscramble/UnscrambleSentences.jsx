@@ -3,9 +3,8 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { setJSON, removeItem } from "../../lib/storage.js";
 import { loadOwnSets, findSharedSet } from "../../lib/sets.js";
 import { getActiveTeacherId, teacherKey, teacherName } from "../../lib/teacher.js";
+import { UNSCRAMBLE_SETS_KEY as STORAGE_KEY } from "../../lib/storageKeys.js";
 import "./unscramble.css";
-
-const STORAGE_KEY = "unscramble-sets";
 
 function parseSentences(text) {
   return text
