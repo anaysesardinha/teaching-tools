@@ -3,9 +3,9 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { setJSON, removeItem } from "../../lib/storage.js";
 import { loadOwnSets, findSharedSet } from "../../lib/sets.js";
 import { getActiveTeacherId, teacherKey, teacherName } from "../../lib/teacher.js";
+import { SPIN_THE_WHEEL_SETS_KEY as STORAGE_KEY } from "../../lib/storageKeys.js";
 import "./spinTheWheel.css";
 
-const STORAGE_KEY = "spin-the-wheel-sets";
 const SPIN_DURATION_MS = 4200;
 const SLICE_COLOR_A = "var(--neutral-block)";
 const SLICE_COLOR_B = "color-mix(in srgb, var(--neutral-block) 55%, white)";

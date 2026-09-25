@@ -2,12 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { getJSON, setJSON, removeItem } from "../../lib/storage.js";
 import { getActiveTeacherId, teacherKey, teacherName } from "../../lib/teacher.js";
+import { WHITEBOARD_STUDENTS_KEY as STUDENTS_KEY, whiteboardBoardKey as boardKey } from "../../lib/storageKeys.js";
 import "./whiteboard.css";
-
-// Each teacher keeps their own roster. Board keys stay un-namespaced: student
-// ids are already unique, and the namespaced roster is what separates them.
-const STUDENTS_KEY = "whiteboard-students";
-const boardKey = (studentId) => `whiteboard-board-${studentId}`;
 
 const BOARD_WIDTH = 3200;
 const BOARD_HEIGHT = 1800;

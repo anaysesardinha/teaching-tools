@@ -119,3 +119,78 @@
   font-size: 13px;
   color: var(--ink-soft);
 }
+
+.home-row { display: flex; gap: 10px; align-items: center; }
+
+.home-btn {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 10px;
+  padding: 10px 16px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+.home-btn:active { transform: scale(0.97); }
+.home-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+.home-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home-btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.home-btn-ghost {
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--ink-soft);
+  border: 1px solid var(--surface-glass-border);
+}
+.home-btn-ghost:hover { color: var(--ink); border-color: var(--ink-soft); }
+.home-btn-danger { background: var(--error-soft); color: var(--error); }
+.home-btn-sm { padding: 7px 12px; font-size: 13px; }
+
+.home-backup-banner {
+  font-size: 13px;
+  color: var(--error);
+  background: var(--error-soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: -8px 0 20px 0;
+}
+
+.home-backup {
+  margin-top: 24px;
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--surface-glass-border);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.home-backup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.home-backup-title { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.home-backup-desc { font-size: 13px; color: var(--ink-soft); }
+.home-backup-flash { font-size: 13px; color: var(--accent-strong); font-weight: 700; margin-top: 10px; }
+.home-backup-error { font-size: 13px; color: var(--error); font-weight: 600; margin-top: 10px; }
+
+.home-backup-confirm {
+  margin-top: 14px;
+  background: var(--error-soft);
+  border-radius: 16px;
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
